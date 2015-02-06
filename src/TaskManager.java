@@ -10,7 +10,5 @@ class TaskManager	{
 		
 	}
 	
-	public static testing {
-		asdadasd
-	}
+
 }
