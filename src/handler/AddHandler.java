@@ -5,18 +5,23 @@
  */
 package handler;
 
-import database.Database;
-import application.TaskData;
 import application.TaskList;
 
 public class AddHandler {
 
-	public static boolean addTask(String taskInformation, TaskList taskList, Database database) {
+	/**
+	 * add a task to the task list
+	 * 
+	 * @param taskInformation - parameter user given
+	 * @param taskList
+	 * @return true if successfully added, false is not supposed to be returned
+	 */
+	public static boolean addTask(String taskInformation, TaskList taskList) {
 		// parsing the parameters of the taskData
 		
-		//
-		TaskData newTask = new TaskData();
-		if (taskList.addTask(newTask)) {
+		
+		//TaskData newTask = new TaskData();
+		if (taskList.addTask(taskInformation)) {
 			/* it shall be i pass the new task to the database and database shall add
 			 * accrodingly
 			database.

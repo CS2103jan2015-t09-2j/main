@@ -25,15 +25,16 @@ public class CommandLineInterface {
 
 		while (true) {
 			printMessageToUser(String.format(COMMAND_MESSAGE));
-			userCommand = scanner.next();
+			userCommand = scanner.nextLine();
+			//System.out.println("UL: "+userCommand);
 			message = commandHandler.processCommand(userCommand);
-			printMessageToUser(message);
+			//printMessageToUser(message);
 		}
 	}
 
 	//print all of the different type of message using this method
 	public void printMessageToUser(String message){
-		System.out.printf(message);
+		System.out.println(message);
 	}
 
 	
