@@ -2,7 +2,6 @@ package application;
 
 public class TaskData {
 	/****Attribute****/
-	private String taskID;
 	private String taskType;
 	private String description;
 	private String startDateTime;
@@ -17,8 +16,7 @@ public class TaskData {
 	//(improvement to be made)
 	//1. need to check validity of data
 	//2. separate constructor for different task type
-	public TaskData(String taskID, String taskType, String description, String startDateTime, String endDateTime, String deadline, boolean status) {
-		this.taskID = taskID;
+	public TaskData(String taskType, String description, String startDateTime, String endDateTime, String deadline, boolean status) {
 		this.taskType = taskType;
 		this.description = description;
 		this.startDateTime = startDateTime;
@@ -71,8 +69,4 @@ public class TaskData {
 		return description;
 	}
 	
-	public String getTaskID() {
-		return taskID;
-	}
-
 }
