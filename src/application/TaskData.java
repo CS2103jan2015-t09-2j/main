@@ -1,30 +1,65 @@
+/**
+ * TaskData stores the attributes of a task,
+ * when a new task is created, the status is set to 
+ * fault(uncompleted) by default;
+ * 
+ * Type of tasks shall be auto updated by whether 
+ * startDateTime and endDateTime is null
+ */
 package application;
 
 public class TaskData {
 	/****Attribute****/
-	private String taskID;
 	private String taskType;
 	private String description;
 	private String startDateTime;
 	private String endDateTime;
-	private String deadline;
 	private boolean status;
 	
 	// dummy constructor delete in futre
 	public TaskData() {
 		
 	}
-	//(improvement to be made)
-	//1. need to check validity of data
-	//2. separate constructor for different task type
-	public TaskData(String taskID, String taskType, String description, String startDateTime, String endDateTime, String deadline, boolean status) {
-		this.taskID = taskID;
-		this.taskType = taskType;
+
+	/**
+	 * construct a timed task with starting time and end time
+	 * 
+	 * @param description
+	 * @param startDateTime - starting date & time
+	 * @param endDateTime - ending date & time
+	 */
+	public TaskData(String description, String startDateTime, String endDateTime) {
 		this.description = description;
 		this.startDateTime = startDateTime;
 		this.endDateTime = endDateTime;
-		this.deadline = deadline;
-		this.status = status;
+		this.status = false;
+		this.taskType = "timed";
+	}
+
+	/**
+	 * construct a deadline task with deadline only
+	 * 
+	 * @param description
+	 * @param deadline
+	 */
+	public TaskData(String description, String deadline) {
+		this.description = description;
+		this.startDateTime = null;
+		this.endDateTime = deadline;
+		this.status = false;
+		this.taskType = "deadline";
+	}
+	/**
+	 * construct a floating task with desciption only
+	 * 
+	 * @param description
+	 */
+	public TaskData(String description) {
+		this.description = description;
+		this.startDateTime = null;
+		this.endDateTime = null;
+		this.status = false;
+		this.taskType = "floating";
 	}
 	
 	public void setStartDateTime(String newStartDateTime) {
@@ -36,7 +71,8 @@ public class TaskData {
 	}
 	
 	public void setDeadline(String newDeadline) {
-		deadline = newDeadline;
+		startDateTime = null;
+		endDateTime = newDeadline;
 	}
 
 	public void setStatus(boolean newStatus) {
@@ -60,7 +96,7 @@ public class TaskData {
 	}
 	
 	public String getDeadLine(){
-		return deadline;
+		return endDateTime;
 	}
 	
 	public boolean getStatus(){
@@ -71,8 +107,4 @@ public class TaskData {
 		return description;
 	}
 	
-	public String getTaskID() {
-		return taskID;
-	}
-
 }

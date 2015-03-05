@@ -53,8 +53,16 @@ public class CommandParser {
 	}
 
 	private static String getFirstWord(String userCommand) {
-		String splitOfCommand[] = userCommand.split(" ", 2);
-		String firstWord = splitOfCommand[0];
+		//System.out.println("first: "+userCommand);
+		String firstWord ;
+		int index = userCommand.indexOf(" ");
+		if(index != -1){
+			firstWord= userCommand.substring(0, index);
+			//System.out.println("first: "+firstWord);
+		}
+		else{
+			firstWord = userCommand;
+		}
 		return firstWord;
 	}
 }

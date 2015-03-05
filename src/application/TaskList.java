@@ -6,12 +6,13 @@ import java.io.FileNotFoundException;
 
 public class TaskList {
 
-	private List<TaskData> taskList = new ArrayList<TaskData>();
+	private List<String> taskList = new ArrayList<String>();
+	private int size = 0;
 	
-		public TaskList() {
-		
+	public TaskList() {
+		size = 0;
 	}
-	
+
 	/**
 	 * insert a new task to the list, returns true if successfully
 	 * added
@@ -19,10 +20,11 @@ public class TaskList {
 	 * @param newTask - new task created
 	 * @return true - if the operation is success.
 	 */
-	public boolean addTask(TaskData newTask) {
-		return taskList.add(newTask);	
+	public boolean addTask(String newTask) {
+		size = size + 1;
+		return taskList.add(newTask);			
 	}
-	
+
 	/**
 	 * try to remove a task by index from the list
 	 * 
@@ -30,22 +32,24 @@ public class TaskList {
 	 * @return removedTask - deleted Task
 	 * @throws IndexOutOfBoundsException - if index if out of range of the list
 	 */
-	public TaskData deleteTask(int index) throws IndexOutOfBoundsException {
-		TaskData removedTask = new TaskData();
+	public String deleteTask(int index) throws IndexOutOfBoundsException {
+		String removedTask = new String();
 		try {
 			removedTask = taskList.remove(index);
+			size--;
 		} catch (IndexOutOfBoundsException iob) {
 			return null;
 		}
 		return removedTask;
 	}
-	
+
 	/**
 	 * search the list by a keyword
 	 * 
 	 * @param keyword
 	 * @return result arraylist containing the index that contains the keyword
 	 */
+	/*
 	public ArrayList<Integer> searchTask(String keyword) {
 		ArrayList<Integer> foundTaskIndex = new ArrayList<Integer>();
 		int indexCounter = 1;
@@ -57,12 +61,22 @@ public class TaskList {
 		}
 		return foundTaskIndex;
 	}
+	*/
 	
 	/**
 	 * display the tasks in the list
 	 * @return
 	 */
-	public String displayTask() {
-		return "";
+	public String showTask(int index) {
+		return taskList.get(index);
+	}
+	
+	public void editTask(int index, String newTask) {
+		taskList.remove(index);
+		taskList.add(newTask);
+	}
+	
+	public int getSize() {
+		return size;
 	}
 }
