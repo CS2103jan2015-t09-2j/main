@@ -39,7 +39,7 @@ public class AddHandlerTest {
 		ah.execute("add", "dinner 6-7", taskTest);
 		ah.execute("a", "Reflection by 22:00 tomorrow", taskTest);
 
-		assertEquals(ah.execute("+", "help", taskTest), ah.getHelp());
+		assertEquals(ah.execute("+", "help", taskTest), ah.getHelp(), taskTest);
 		assertEquals(taskTest, expected);
 	}
 
