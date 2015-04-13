@@ -101,9 +101,8 @@ class DeleteHandler extends UndoableCommandHandler {
      */
     private void deleteByIndex(ArrayList<Task> taskList, String[] token) throws Exception{
         for (String t: token) {
-            IndexParser ip = new IndexParser(t);
             try {
-                index = ip.getIndex() - 1;
+                index = Integer.parseInt(t) - 1;
             } catch (NumberFormatException nfe) {
                 badFeedback = appendFeedback(badFeedback, t);
                 continue;
