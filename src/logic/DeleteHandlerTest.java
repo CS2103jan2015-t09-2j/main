@@ -10,22 +10,34 @@ import org.junit.Test;
 import java.util.*;
 
 import application.Task;
+import application.TaskCreator;
 public class DeleteHandlerTest {
 
 	DeleteHandler dh = new DeleteHandler();
 	ArrayList<Task> taskTest = new ArrayList<Task>();
 	ArrayList<Task> expected = new ArrayList<Task>();
-	Task task1 = CommandHandler.createNewTask("dinner 6 to 7pm"),
-			 task2 = CommandHandler.createNewTask("read Harry Porter"),
-			 task3 = CommandHandler.createNewTask("Reflectoin by tomorrow 10pm");
+	Task task1, task2, task3;
+	 
+	public void setUp() throws Exception {
+	    TaskCreator  tc = new TaskCreator("CS2103 exam tomorrow 10am to 12pm");
+	    task1 = tc.createNewTask();
+	    tc.setNewString("read Harry Porter");
+	    task2 = tc.createNewTask();
+	    tc.setNewString("CG2271 exam tomorrow 3pm to 5pm");
+	    task3 = tc.createNewTask();
+	}
 		
 	
 	public void  setUp1() {		
+	    try {
+	        setUp();
+	    } catch (Exception e) {
+	        
+	    }
 		expected.clear();
 		taskTest.clear();
 		taskTest.add(task1);
 		taskTest.add(task2);
-		taskTest.add(task3);
 	}
 
 	
@@ -36,7 +48,11 @@ public class DeleteHandlerTest {
 	@Test
 	public void testExecute1() {
 		setUp1();
-		dh.execute("d", "2 1 3", taskTest);
+		try {
+            dh.execute("d", "2 1", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		assertEquals(taskTest, expected);
 	}
 	
@@ -58,14 +74,25 @@ public class DeleteHandlerTest {
 	@Test
 	public void testExecute2_1() {
 		setUp2();
-		dh.execute("d", "-1", taskTest);
+		try {
+            dh.execute("d", "-1", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		assertEquals(taskTest, expected);
 	}
-	
+	/*Test2
+    *
+    * This is a boundary case when user types zero(negative partition?) 
+    */
 	@Test
 	public void testExecute2_2() {
         setUp2();
-        dh.execute("d", "0", taskTest);
+        try {
+            dh.execute("d", "0", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         assertEquals(taskTest, expected);
     }
 	
@@ -75,17 +102,23 @@ public class DeleteHandlerTest {
 		taskTest.add(task1);
 		taskTest.add(task2);
 		taskTest.add(task3);
+		expected.add(task1);
 		expected.add(task2);
 		expected.add(task3);
 	}
 
 	/*Test 3
-	 * This is a boundary case when user types the command mixing cases
+	 * This is a boundary case when user types keyword while no tasks
+	 * is containing this letter 
 	 */
 	@Test
 	public void testExecute3() {
 		setUp3();
-		dh.execute("DeLEte", "1", taskTest);
+		try {
+            dh.execute("DeLEte", "final", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		assertEquals(taskTest, expected);
 	}
 	
@@ -104,8 +137,35 @@ public class DeleteHandlerTest {
 	@Test
 	public void testExecute4() {
 		setUp4();
-		dh.execute("D", "4", taskTest);
+		try {
+            dh.execute("D", "4", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 		assertEquals(taskTest, expected);
 	}
-
+	
+	public void setUp5() {
+        expected.clear();
+        taskTest.clear();
+        taskTest.add(task1);
+        taskTest.add(task2);
+        taskTest.add(task3);
+        expected.add(task2);
+        expected.add(task3);
+    }
+	/*Test 4
+     * This is a boundary case when user types description of task
+     * where there are multiple tasks containing this keyword
+     */
+    @Test
+    public void testExecute5() {
+        setUp4();
+        try {
+            dh.execute("D", "exam", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertEquals(taskTest, expected);
+    }
 }
