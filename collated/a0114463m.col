@@ -1,0 +1,3036 @@
+//@author: a0114463m
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskCreator.java
+	 */
+
+package application;
+
+import parser.MainParser;
+/**
+ * A constructor for task objects, returns feedback when constructing the new 
+ * object to its caller
+ *
+ */
+public class TaskCreator {
+
+    private String taskInformation = "";
+    private String feedback = "";
+    
+    public TaskCreator(String taskInformation) {
+        this.taskInformation = taskInformation;
+    }
+    
+    /**
+     * creates a new task by a string containing the information of the task.
+     * It will call the respective parsers to get information about the new
+     * task
+     *@param taskInformation - the input from user that specifies the task
+     *@return new task object created based on the input from user.
+     */
+    public Task createNewTask() throws Exception{
+        MainParser parser = new MainParser(taskInformation);
+        feedback = parser.getFeedback();
+        String description = parser.getDescription();
+        String taskType = parser.getTaskType();
+        String startDateTime = parser.getStartDate() + " " + parser.getStartTime();
+        String endDateTime = parser.getEndDate() + " " + parser.getEndTime();
+ 
+        Task newTask = new Task(taskType, description, startDateTime, endDateTime, "undone");
+        return newTask;
+    }
+    
+    public void setNewString(String newInformation) {
+        taskInformation = newInformation;
+    }
+    
+    public String getFeedback() {
+        return feedback;
+    }
+}
+
+	// End of segment: E:\main\src\application\TaskCreator.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\AddHandler.java
+	 */
+
+
+package logic;
+
+import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import application.TaskCreator;
+
+/**
+ * CommandHandler for "add" function.
+ * 
+ * Adding tasks is achieved by "add [task information]"
+ * New task included in parameter invokes the static method createNewTask
+ * in CommandHandler abstract class through various parsers.
+ * The new task is added to the memory 
+ * 
+ *
+ */
+class AddHandler extends UndoableCommandHandler {
+    private static final String HELP_MESSAGE = "%1$s <task information>\n\t add a new task to TaskManager\n";
+    private static final String CLASHING_TASK_MESSAGE = "But there are %1$s tasks clashing with it\n";
+//  private static final String FATAL_ERROR_MESSAGE = "Fatal error! Unable to add Task";
+    private static final String SUCCESS_ADD_MESSAGE = "Task \"%1$s\" is added\n";
+    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("add", "a", "new", "+"));
+    private static final Logger addLogger = Logger.getLogger(AddHandler.class.getName());
+    private Task newTask = null;
+    
+    @Override
+    public ArrayList<String> getAliases() {
+        // TODO Auto-generated method stub
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+        String feedback = "";
+        String[] token = parameter.split(" ");
+        if (isHelpOnly(token) || isEmpty(parameter)) {
+            return getHelp(command);
+        }
+
+        addLogger.entering(getClass().getName(), "Add non empty task");
+        try {
+            TaskCreator taskCreator = new TaskCreator(parameter);
+            newTask = taskCreator.createNewTask();         
+            feedback = taskCreator.getFeedback();   
+        } catch (Exception e) {
+            return feedback;
+        }
+        
+        if (isEmpty(newTask.getDescription())) {
+            return "No description for new task\n";
+        }
+        // a non empty task is created
+        assert (newTask != null);
+        
+        int addStatus;
+        try {
+            addStatus= memory.addTask(newTask); 
+            recordChanges(taskList);       
+        } catch (Exception e) {
+            return "Error when accessing file\n";
+        }
+        
+        if (addStatus == 1) {
+            feedback = String.format(SUCCESS_ADD_MESSAGE, newTask.getDescription());
+        }
+        else {
+            feedback = String.format(SUCCESS_ADD_MESSAGE, newTask.getDescription());
+            feedback += String.format(CLASHING_TASK_MESSAGE, Integer.toString(addStatus));
+        }
+        return feedback;
+    }
+
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder addRecorder = new UndoRedoRecorder(taskList);
+        addRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.ADD, newTask, newTask));
+        updateTaskList(taskList);     
+        addRecorder.recordUpdatedList(taskList);
+        undoRedoManager.addNewRecord(addRecorder);
+       
+    }
+
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        newTask = null;
+    }
+
+
+    /**
+     * check if the argument user typed is empty
+     * @param string
+     * @return true if the string given is empty
+     */
+    private boolean isEmpty(String string) {
+        return string.trim().equals("");
+    }
+
+    /**
+     * check if user is looking for help
+     * @param token the string tokens extracted from user input
+     * @return true if the string contains the word help only
+     */
+    private boolean isHelpOnly(String[] token) {
+        return ((token.length == 1) && (token[0].toLowerCase().trim().equals("help")));
+    }
+
+    /**
+     * update the taskList in CommandHandler
+     */
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(memory.searchStatus("undone"));
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+}
+
+	// End of segment: E:\main\src\logic\AddHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\AddHandlerTest.java
+	 */
+
+package logic;
+
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import application.Task;
+import application.TaskCreator;
+public class AddHandlerTest {
+
+    LogicController lc = LogicController.getInstance();
+	AddHandler ah = new AddHandler();
+	ArrayList<Task> taskTest = new ArrayList<Task>();
+	ArrayList<Task> expected = new ArrayList<Task>();
+	Task task1, task2, task3 = null;
+	@Before
+	public void setUp() throws Exception {
+	    lc.executeCommand("clr");
+	    TaskCreator tc = new TaskCreator("help mom for dinner 6 to 7pm");
+	    task1 = tc.createNewTask();
+	    tc.setNewString("read Harry Porter");
+	    task2 = tc.createNewTask();
+	    tc.setNewString("Reflectoin by tomorrow 10pm");
+	    task3 = tc.createNewTask();
+		
+		expected.clear();
+		taskTest.clear();
+		expected.add(task1);
+		expected.add(task2);
+		expected.add(task3);		
+	}
+
+	
+}
+
+	// End of segment: E:\main\src\logic\AddHandlerTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\ClearHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+
+/**
+ * CommandHandler for "clear" function
+ * 
+ */
+
+class ClearHandler extends UndoableCommandHandler {
+    private static final String HELP_MESSAGE = "%1$s\n\t delete all tasks\n";
+    private static final String ALL_CLEAR_MESSAGE = "All tasks cleared\n";
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("clear", "clr", "dall", "deleteall"));
+    private ArrayList<Task> oldTaskList = new ArrayList<Task>();
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) {
+        reset();
+        String[] token = parameter.split(" ");
+        if (isHelpOnly(token)) {
+            return getHelp(command);
+        }
+        oldTaskList = new ArrayList<Task>(taskList);
+        recordChanges(taskList);
+        memory.removeAll();
+        return ALL_CLEAR_MESSAGE;
+    }
+    
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder clearRecorder = new UndoRedoRecorder(taskList);
+        for (Task removedTask: oldTaskList) {
+            clearRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.DELETE, removedTask, removedTask));
+        }
+        updateTaskList(taskList);
+        clearRecorder.recordUpdatedList(taskList);
+        undoRedoManager.addNewRecord(clearRecorder);
+    }
+    
+    /**
+     * update the taskList in CommandHandler
+     */
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.clear();
+    }
+    
+    /**
+     * check if user is looking for help
+     * @param token the string tokens extracted from user input
+     * @return true if the string contains the word help only
+     */
+    private boolean isHelpOnly(String[] token) {
+        return ((token.length == 1) && (token[0].toLowerCase().trim().equals("help")));
+    }
+    
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+
+    @Override
+    void reset() {
+        oldTaskList.clear();
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\ClearHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\CommandHandler.java
+	 */
+
+
+package logic;
+
+import java.util.ArrayList;
+
+import application.Task;
+import storage.Memory;
+/**
+ * All handlers in Logic (except undo) shall extend this class so that all
+ * handlers have functions of execute() and getHelp()
+ */
+abstract class CommandHandler {
+    ArrayList<String> aliases;
+    Memory memory = Memory.getInstance();
+    /**
+     * get all the aliases acceptable to the command such that
+     * they can invoke the handler
+     * @return arraylist of strings that can be used to invoke the command
+     */
+    abstract ArrayList<String> getAliases();
+    
+    /**
+     * execute the command based on the input from user (such as "add",
+     * "delete", etc) and the parameter for executing the command. Return
+     * the feedback as a String object for now.
+     * @param command - command extracted from user input
+     * @param parameter - parameter for executing the command based on user input
+     * @return feedback String to UI after each execution of the command
+     */
+    abstract String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception;
+
+    /**
+     * get help String for each of the commands when user types "[command] help"
+     * @param the string of the command that the CommandHandler supports
+     * @return help string of the handler
+     */
+    abstract public String getHelp(String command);   
+    
+}
+
+	// End of segment: E:\main\src\logic\CommandHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\DeleteHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import parser.IndexParser;
+import parser.MainParser;
+
+/**
+ * CommandHandler for "delete" function
+ * 
+ * Deleting task is achieved by "delete [index]"
+ * The task is removed from memory upon a success removal and the task
+ * is returned in String. null is returned for failed removal.
+ *
+ */
+class DeleteHandler extends UndoableCommandHandler {
+
+    private static final String HELP_MESSAGE = "%1$s <index>\n\t remove the respective task of the index from TaskManager\n";
+    private static final String GOODFEEDBACK_MESSAGE = "Removed task %1$s\n";
+    private static final String BADFEEDBACK_MESSAGE = "Invalid input %1$s\n";	
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("delete", "d", "remove", "-"));
+    private ArrayList<Task> removedTask = new ArrayList<Task>();
+    private String goodFeedback = new String(), 
+                   badFeedback = new String(),
+                   feedback = new String();    
+    private int index;
+    @Override
+    public ArrayList<String> getAliases() {
+        // TODO Auto-generated method stub
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception{
+
+        reset();
+        String[] token = parameter.split(" ");
+        if (isHelp(token) || isEmptyParameter(parameter)) {
+            return getHelp(command);
+        }
+
+        if (isDeleteAll(token)) {
+            ClearHandler clrHandler = new ClearHandler();
+            return clrHandler.execute(token[0], "", taskList);
+        }
+
+        IndexParser ip = new IndexParser(parameter);
+        try {
+            index = ip.getIndex() - 1;
+            deleteByIndex(taskList, token);
+        } catch (NumberFormatException nfe) {
+            deleteByKeyword(taskList, parameter);
+        }
+        
+        recordChanges(taskList);
+        
+        if (!goodFeedback.equals("")) {
+            feedback += String.format(GOODFEEDBACK_MESSAGE, goodFeedback);
+        }
+        if (!badFeedback.equals("")) {
+            feedback += String.format(BADFEEDBACK_MESSAGE, badFeedback);
+        }
+        
+        return feedback;
+    }
+
+    /**
+     * remove the first occurence of the task containing the keyword
+     * @param taskList - tasklist shown to user
+     * @param parameter - the keyword that user intend to delete
+     * @throws Exception
+     */
+    private void deleteByKeyword(ArrayList<Task> taskList, String parameter)
+            throws Exception {
+        MainParser parser = new MainParser(parameter);
+        ArrayList<Task> searchList = memory.searchDescription(parser.getDescription());
+        removeKeyword:
+        for (Task task: searchList) {
+            if (taskList.contains(task)) {
+                removedTask.add(task);
+                goodFeedback += task.getDescription();
+                break removeKeyword;
+            }
+        }
+//            for (Task task: taskList) {
+//                if (task.getDescription().contains(parameter)) {
+//                    removedTask.add(task);
+//                    goodFeedback += task.getDescription();
+//                    break;                    
+//                }                
+//            }
+    }
+
+    /**
+     * @param taskList
+     * @param token
+     */
+    private void deleteByIndex(ArrayList<Task> taskList, String[] token) throws Exception{
+        for (String t: token) {
+            try {
+                index = Integer.parseInt(t) - 1;
+            } catch (NumberFormatException nfe) {
+                badFeedback = appendFeedback(badFeedback, t);
+                continue;
+            }
+            try {
+                removedTask.add(taskList.get(index));				
+                goodFeedback = appendFeedback(goodFeedback, t);
+            } catch (IndexOutOfBoundsException iob) {
+                badFeedback = appendFeedback(badFeedback, t);
+            } 
+        }
+    }
+    
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder deleteRecorder = new UndoRedoRecorder(taskList);
+        for (Task task: removedTask) {
+            deleteRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.DELETE, task, task));
+            taskList.remove(task);
+            memory.removeTask(task);
+        }
+        if (!deleteRecorder.isEmpty()) {
+            deleteRecorder.recordUpdatedList(taskList);
+            undoRedoManager.addNewRecord(deleteRecorder);
+        }
+    }
+
+    /**
+     * reset the status of handler
+     */
+    @Override
+    void reset() {
+        removedTask.clear();
+        goodFeedback = "";
+        badFeedback = "";
+        feedback = "";
+        index = -1;
+    }
+    /**
+     * append the indexes for valid deletion or invalid input
+     * @param feedback
+     * @param index
+     * @return - feedback string
+     */
+    private String appendFeedback(String feedback, String index) {
+        feedback += index + " ";
+        return feedback;
+    }
+
+
+    /**
+     * decide whether is delete all
+     * @param token
+     * @return true if the world given is all
+     */
+    private boolean isDeleteAll(String[] token) {
+        return token[0].toLowerCase().trim().equals("all");
+    }
+
+
+    /**
+     * check if the argument user typed is empty
+     * @param parameter
+     * @return true if the parameter given is empty
+     */
+    private boolean isEmptyParameter(String parameter) {
+        return parameter.trim().equals("");
+    }
+
+
+    /**
+     * check if user is looking for help
+     * @param token
+     * @return true if the parameter given is help only
+     */
+    private boolean isHelp(String[] token) {
+        return token.length == 1 && token[0].toLowerCase().trim().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+}
+
+	// End of segment: E:\main\src\logic\DeleteHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\DeleteHandlerTest.java
+	 */
+
+
+package logic;
+
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
+import java.util.*;
+
+import application.Task;
+import application.TaskCreator;
+public class DeleteHandlerTest {
+
+	DeleteHandler dh = new DeleteHandler();
+	ArrayList<Task> taskTest = new ArrayList<Task>();
+	ArrayList<Task> expected = new ArrayList<Task>();
+	Task task1, task2, task3;
+	 
+	public void setUp() throws Exception {
+	    TaskCreator  tc = new TaskCreator("CS2103 exam tomorrow 10am to 12pm");
+	    task1 = tc.createNewTask();
+	    tc.setNewString("read Harry Porter");
+	    task2 = tc.createNewTask();
+	    tc.setNewString("CG2271 exam tomorrow 3pm to 5pm");
+	    task3 = tc.createNewTask();
+	}
+		
+	
+	public void  setUp1() {		
+	    try {
+	        setUp();
+	    } catch (Exception e) {
+	        
+	    }
+		expected.clear();
+		taskTest.clear();
+		taskTest.add(task1);
+		taskTest.add(task2);
+	}
+
+	
+	/*Test1
+	 * This is a boundary case where user deletes multiple tasks in 
+	 * random order
+	 */
+	@Test
+	public void testExecute1() {
+		setUp1();
+		try {
+            dh.execute("d", "2 1", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		assertEquals(taskTest, expected);
+	}
+	
+	public void setUp2() {
+		expected.clear();
+		taskTest.clear();
+		taskTest.add(task1);
+		taskTest.add(task2);
+		taskTest.add(task3);
+		expected.add(task1);
+		expected.add(task2);
+		expected.add(task3);
+	}
+	
+	/*Test2
+     *
+	 * This is a boundary case when user types a non-positive number(negative partition?) 
+	 */
+	@Test
+	public void testExecute2_1() {
+		setUp2();
+		try {
+            dh.execute("d", "-1", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		assertEquals(taskTest, expected);
+	}
+	/*Test2
+    *
+    * This is a boundary case when user types zero(negative partition?) 
+    */
+	@Test
+	public void testExecute2_2() {
+        setUp2();
+        try {
+            dh.execute("d", "0", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertEquals(taskTest, expected);
+    }
+	
+	public void setUp3() {
+		expected.clear();
+		taskTest.clear();
+		taskTest.add(task1);
+		taskTest.add(task2);
+		taskTest.add(task3);
+		expected.add(task1);
+		expected.add(task2);
+		expected.add(task3);
+	}
+
+	/*Test 3
+	 * This is a boundary case when user types keyword while no tasks
+	 * is containing this letter 
+	 */
+	@Test
+	public void testExecute3() {
+		setUp3();
+		try {
+            dh.execute("DeLEte", "final", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		assertEquals(taskTest, expected);
+	}
+	
+	public void setUp4() {
+		expected.clear();
+		taskTest.clear();
+		taskTest.add(task2);
+		taskTest.add(task3);
+		expected.add(task2);
+		expected.add(task3);
+	}
+	/*Test 4
+	 * This is a boundary case when user types an index which is larger than
+	 * the size (size boundary partition?)
+	 */
+	@Test
+	public void testExecute4() {
+		setUp4();
+		try {
+            dh.execute("D", "4", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		assertEquals(taskTest, expected);
+	}
+	
+	public void setUp5() {
+        expected.clear();
+        taskTest.clear();
+        taskTest.add(task1);
+        taskTest.add(task2);
+        taskTest.add(task3);
+        expected.add(task2);
+        expected.add(task3);
+    }
+	/*Test 4
+     * This is a boundary case when user types description of task
+     * where there are multiple tasks containing this keyword
+     */
+    @Test
+    public void testExecute5() {
+        setUp4();
+        try {
+            dh.execute("D", "exam", taskTest);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertEquals(taskTest, expected);
+    }
+}
+
+	// End of segment: E:\main\src\logic\DeleteHandlerTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\EditDescriptionHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
+import parser.MainParser;
+import parser.IndexParser;
+import application.Task;
+import application.TaskComparator;
+/**
+ * CommandHandler for "edit description" function.
+ * 
+ * only the field description will change while others remains
+ *
+ */
+class EditDescriptionHandler extends UndoableCommandHandler {
+    private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
+    private static final String HELP_MESSAGE = "%1$s <index> <new description>\n\t update the task description only\n";
+    private static String CHANGE_MESSAGE = "Changed %1$s to %2$s \n";
+    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("edes", "ed"));
+    Task oldTask, newTask = null;
+    String feedback = "";
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+        String[] token = parameter.split(" ");
+        if (token[0].toLowerCase().equals("help") || token[0].equals("")) {
+            return getHelp(command);
+        }
+
+        MainParser parser = new MainParser(parameter.replaceFirst(token[0], ""));
+        IndexParser ip = new IndexParser(token[0]);
+        int index = ip.getIndex() - 1;
+        if (index < 0) {
+            return INVALID_INDEX_MESSAGE;
+        }
+        if (isEmpty(parser.getDescription())) {
+            return "No description for new task\n";
+        }
+
+        try {
+            oldTask = taskList.get(index);
+            newTask = new Task(oldTask);
+        } catch (IndexOutOfBoundsException iob) {
+            return INVALID_INDEX_MESSAGE;
+        }
+
+        newTask.setDescription(parser.getDescription());
+
+        performEdit(taskList);
+        return feedback;
+    }
+
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        newTask = null;
+        oldTask = null;
+        feedback = "";
+    }
+
+    private boolean isEmpty(String string) {
+        return string.trim().equals("");
+    }
+
+    /**
+     * Perform the edit in Memory and update the feedback
+     * @param taskList taskList shown to user
+     */
+    private void performEdit(ArrayList<Task> taskList) {
+        if ((newTask != oldTask) && (oldTask != null)) {           
+            memory.addTask(newTask);
+            recordChanges(taskList);
+            Collections.sort(taskList, new TaskComparator());
+            feedback = String.format(CHANGE_MESSAGE, oldTask.getDescription(), newTask.getDescription());
+        }
+        else {
+            feedback = "New task is identical to some existing task\n";
+        }  
+
+    }
+
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder editDescriptionRecorder = new UndoRedoRecorder(taskList);
+        editDescriptionRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.EDIT, oldTask, newTask));
+        updateTaskList(taskList);
+        editDescriptionRecorder.recordUpdatedList(taskList);
+        undoRedoManager.addNewRecord(editDescriptionRecorder);
+    }
+
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.remove(oldTask);
+        taskList.add(newTask);
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\EditDescriptionHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\EditHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
+import application.Task;
+import application.TaskCreator;
+import parser.IndexParser;
+import application.TaskComparator;
+
+
+/**
+ * CommandHandler for "edit" function
+ * 
+ * other edit handlers will be invoked by specifying the field 
+ * (description or time) and index. If no field is selected, the whole
+ * task will be updated. Index refers to the index of task in
+ * the ArrayList then the information that is intended to change
+ *
+ *
+ */
+class EditHandler extends UndoableCommandHandler {
+
+    private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
+    private static final String HELP_MESSAGE = "%1$s <index> <new task>\n\t edit the task by specifying the index\n"
+            + "edit description <index> <new description>\n\t update the task description only\n"
+            + "edit time <index> <time>\n\t update the time of task \n";
+    private static String CHANGE_MESSAGE = "Updated %1$s to %2$s\n";
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("edit", "e", "update"));
+    Task oldTask, newTask = null;
+    String feedback = "";
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+        String feedback = "";
+        String[] token = parameter.split(" ");
+        if (isHelp(token) || isEmpty(parameter)) {
+            return getHelp(command);
+        }
+
+        IndexParser ip = new IndexParser(parameter);		
+        int index = ip.getIndex() - 1;
+        if (index < 0 || index > taskList.size()) {
+            return INVALID_INDEX_MESSAGE;
+        }
+
+        try {
+            oldTask = taskList.get(index);
+        } catch (IndexOutOfBoundsException iob) {
+            return INVALID_INDEX_MESSAGE;
+        }
+
+        switch (token[0].toLowerCase()) {
+            case "description":
+            case "des":
+                EditDescriptionHandler edh = new EditDescriptionHandler();
+                return edh.execute(command+token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
+            case "time":
+                EditTimeHandler eth = new EditTimeHandler();
+                return eth.execute(command+token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
+            default:
+                try {
+                    index = ip.getIndex() - 1;
+                } catch (NumberFormatException nfe) {
+                    return INVALID_INDEX_MESSAGE;
+                }  
+                try {
+                    TaskCreator taskCreator = new TaskCreator(parameter.replaceFirst(token[0], ""));
+                    newTask = taskCreator.createNewTask();         
+                    feedback = taskCreator.getFeedback();   
+                } catch (Exception e) {
+                    return feedback;
+                }        
+                if (isEmptyDescription(newTask)) {
+                    return "No description for new task\n";
+                }
+                try {
+                    oldTask = taskList.get(index);                   
+                } catch (IndexOutOfBoundsException iob) {
+                    return INVALID_INDEX_MESSAGE;
+                }
+                break;
+        }
+
+        performEdit(taskList);
+        return feedback;
+    }
+
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        newTask = null;
+        oldTask = null;
+        feedback = "";
+    }
+    
+    /**
+     * execute the changes in Memory and update the feedback
+     * @param taskList
+     */
+    private void performEdit(ArrayList<Task> taskList) {
+        if (newTask != oldTask && oldTask != null) {
+            memory.removeTask(oldTask);
+            recordChanges(taskList);            
+            Collections.sort(taskList, new TaskComparator());
+            feedback = String.format(CHANGE_MESSAGE, oldTask.getDescription(), newTask.getDescription());
+        }
+        else {
+            feedback = "New task is identical to some existing task\n";
+        }             
+    }
+    
+    
+    private boolean isEmptyDescription(Task task) {
+        return isEmpty(task.getDescription());
+    }
+       
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder editRecorder = new UndoRedoRecorder(taskList);
+        editRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.EDIT, oldTask, newTask));
+        updateTaskList(taskList);
+        editRecorder.recordUpdatedList(taskList);
+        undoRedoManager.addNewRecord(editRecorder);
+    }
+    
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.remove(oldTask);
+        taskList.add(newTask);
+    }
+    
+    /**
+     * check if the argument user typed is empty
+     * @param parameter
+     * @return true if 
+     */
+    private boolean isEmpty(String parameter) {
+        return parameter.trim().equals("");
+    }
+
+    /**
+     * check if user the user is looking for help
+     * @param token
+     * @return true if the parameter given is help
+     */
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().trim().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+
+
+}
+
+	// End of segment: E:\main\src\logic\EditHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\EditTimeHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
+import parser.MainParser;
+import parser.IndexParser;
+import application.Task;
+import application.TaskComparator;
+/**
+ * CommandHandler for "edit time" function.
+ * 
+ * only the time fields (deadline, start and end) will change while others remains
+ *
+ */
+class EditTimeHandler extends UndoableCommandHandler {
+    private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
+    private static final String HELP_MESSAGE = "%1$s <index> <new time>\n\t update the task time only\n";
+    private static String CHANGE_MESSAGE = "Updated the time of %1$s to %2$s\n";
+    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("etime", "et"));
+    Task oldTask, newTask = null;
+    String feedback = "";
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+        
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+    	String[] token = parameter.split(" ");
+		if (token[0].toLowerCase().equals("help") || token[0].equals("")) {
+			return getHelp(command);
+		}
+		
+        MainParser parser = new MainParser(parameter);
+        IndexParser ip = new IndexParser(token[0]);
+        int index = ip.getIndex() - 1;
+        String newStartDateTime = parser.getStartDate() + " " + parser.getStartTime(),
+               newEndDateTime = parser.getEndDate() + " " + parser.getEndTime();
+        if (index < 0) {
+            return INVALID_INDEX_MESSAGE;
+        }
+        
+        try {
+            oldTask = taskList.get(index);
+            newTask = new Task(oldTask);
+        } catch (IndexOutOfBoundsException iob) {
+            return INVALID_INDEX_MESSAGE;
+        }
+
+        newTask.setEndDateTime(newEndDateTime);
+        newTask.setStartDateTime(newStartDateTime);
+        newTask.setTaskType(parser.getTaskType());
+        
+        performEdit(taskList);
+        return "Task \"" + newTask.getDescription() + "\" has changed time\n";
+    }
+
+    /**
+     * execute the changes in Memory and update the feedback
+     * @param taskList
+     */
+    private void performEdit(ArrayList<Task> taskList) {
+        if (newTask != oldTask && oldTask != null) {
+            memory.removeTask(oldTask);
+            recordChanges(taskList);            
+            Collections.sort(taskList, new TaskComparator());
+            feedback = String.format(CHANGE_MESSAGE, oldTask.getDescription(), newTask.getEndDateTime());
+        }
+        else {
+            feedback = "New task is identical to some existing task\n";
+        }
+    }
+
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder editTimeRecorder = new UndoRedoRecorder(taskList);
+        editTimeRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.EDIT, oldTask, newTask));
+        updateTaskList(taskList);
+        editTimeRecorder.recordUpdatedList(taskList);
+        undoRedoManager.addNewRecord(editTimeRecorder);
+    }
+    
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        newTask = null;
+        oldTask = null;
+        feedback = "";
+    }
+    
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.remove(oldTask);
+        taskList.add(newTask);
+    }
+    
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\EditTimeHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\ExitHandler.java
+	 */
+
+ */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+/**
+ * exit command for CommandHandler
+ */
+public class ExitHandler extends CommandHandler {
+
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("exit", "q", "quit"));
+    @Override
+    protected ArrayList<String> getAliases() {
+        // TODO Auto-generated method stub
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) {
+        return null;
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return "";
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\ExitHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\LogicController.java
+	 */
+
+package logic;
+
+import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
+import storage.Memory;
+import application.Task;
+import application.TaskComparator;
+
+/**
+ * The main component that takes charge of deciding which 
+ * handlers to call and execute
+ * A string is returned to the user after each execution of command
+ */
+public class LogicController {
+    private static LogicController logicController;
+
+    private static final Logger logger = 
+            Logger.getLogger(LogicController.class.getName());
+    private ArrayList<Task> taskList = new ArrayList<Task>();
+    private CommandHandler[] handlers = {new AddHandler(),
+                                         new ClearHandler(),
+                                         new DeleteHandler(),
+                                         new EditHandler(),
+                                         new EditTimeHandler(),
+                                         new EditDescriptionHandler(),
+                                         new ExitHandler(),
+                                         new MarkHandler(),
+                                         new UndoHandler(),
+                                         new UnmarkHandler(),
+                                         new RedoHandler(),
+                                         new SetLocationHandler(),
+                                         new ShowHandler()};
+
+    private Hashtable<String, CommandHandler> handlerTable = 
+            new Hashtable<String, CommandHandler>();
+
+    private LogicController() {
+        logger.entering(getClass().getName(), "Initiating LogicController");
+        taskList = new ArrayList<Task>(Memory.getInstance().searchStatus("undone"));
+        initializeHandlers();
+    }
+
+
+    public static LogicController getInstance() {
+        if (logicController == null) {
+            logicController = new LogicController();
+        }
+        return logicController;
+    }
+
+    /**
+     * Take the input from user from UI and call respective
+     * handlers. Return the feedback to UI after each execution
+     * if the command is unknown, add handler is called by default
+     * @param userCommand
+     * @return - feedback to user
+     */
+    public String executeCommand(String userCommand) {        
+        String[] inputToken = userCommand.trim().split(" ");
+        
+        if (isHelp(inputToken[0])) {
+            return executeHelp(userCommand, inputToken);
+        }
+        
+        if (isUnknownCommand(inputToken[0])) {
+            return executeAddByDefault(userCommand);            
+        }
+        
+        CommandHandler handler = handlerTable.get(inputToken[0]);
+                
+        String parameter = userCommand.replaceFirst(Pattern.quote(inputToken[0]), "").trim();
+        String feedback = "";
+        try {
+            feedback = handler.execute(inputToken[0], parameter, taskList);
+            Collections.sort(taskList, new TaskComparator());
+        } catch (Exception e) {
+            feedback = "Error executing command\n";
+        }
+        return feedback;
+    }
+
+
+    /**
+     * execute help if a valid help inquiry is entered
+     * @param userCommand
+     * @param inputToken
+     * @return help message if a valid help inquiry, otherwise return the result
+     * of executing add
+     */
+    private String executeHelp(String userCommand, String[] inputToken) {
+        if (isHelpOnly(inputToken)) {
+            return showAllHelps();
+        }
+        else if ((isUnknownCommand(inputToken[1]))) {
+            return executeAddByDefault(userCommand);
+        }
+        else {
+            CommandHandler handler = handlerTable.get(inputToken[1]);
+            return handler.getHelp(handler.getAliases().get(0));
+        }
+    }
+
+
+    /**
+     * @return help messages for all handlers
+     */
+    private String showAllHelps() {
+        String help = "";
+        help = prepareHelp(help);
+        return help;
+    }
+
+
+    private String prepareHelp(String help) {
+        for (CommandHandler handler: handlers)
+            help += handler.getHelp(handler.getAliases().get(0));
+        return help;
+    }
+
+
+    private boolean isHelpOnly(String[] inputToken) {
+        return inputToken.length == 1;
+    }
+
+    private boolean isHelp(String command) {
+        return command.trim().toLowerCase().equals("help");
+    }
+    private boolean isUnknownCommand(String command) {
+        return !handlerTable.containsKey(command);
+    }
+
+
+    private String executeAddByDefault(String userCommand) {
+        String feedback = "";
+        try {
+            feedback = handlerTable.get("add").execute("add", userCommand, taskList);
+            Collections.sort(taskList, new TaskComparator());
+        } catch (Exception e) {
+            feedback = "Error adding by default\n";
+        }
+        return feedback;
+    }
+
+    /**
+     * associate the aliases of each handlers to its owner
+     * such that correct handlers can be invoked for execution
+     * conflicting aliases will log error
+     */
+    private void initializeHandlers() {
+        for (CommandHandler handler: handlers) {
+            ArrayList<String> aliases = handler.getAliases();
+            for (String cmd: aliases) {
+                if (handlerTable.containsKey(cmd)) {
+                    logger.log(Level.INFO, "conflicting command "+ cmd);
+                }
+                else {
+                    handlerTable.put(cmd, handler);
+                }
+            }
+        }
+    }
+
+    /**
+     * return the taskList in LogicController
+     * @return taskList stored in LogicController
+     */
+    public ArrayList<Task> getTaskList() {
+        return taskList;
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\LogicController.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\LogicControllerTest.java
+	 */
+
+package logic;
+
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+
+import org.junit.Test;
+
+import application.Task;
+
+public class LogicControllerTest {
+
+    LogicController lc = LogicController.getInstance();
+    ArrayList<Task> expected = new ArrayList<Task>();
+    Task task1 = CommandHandler.createNewTask("super"),
+         task2 = CommandHandler.createNewTask("superwoman"),
+         task3 = CommandHandler.createNewTask("superman"),
+         task4 = CommandHandler.createNewTask("a"),
+         task5 = CommandHandler.createNewTask("b"),
+         task6 = CommandHandler.createNewTask("c");
+    
+    public void  setUp1() {     
+        expected.clear();
+        expected.add(task1);
+        expected.add(task2);
+        expected.add(task3);
+    }
+    @Test
+    public void testExecuteCommand() {
+           lc.executeCommand("+ superman");
+           lc.executeCommand("a super");
+           lc.executeCommand("add superwoman");
+           assertEquals(lc.getTaskList(), expected);
+    }
+
+}
+
+	// End of segment: E:\main\src\logic\LogicControllerTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\MarkHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import parser.IndexParser;
+import parser.MainParser;
+/**
+ * CommandHandler for "mark" function
+ * 
+ * Mark a task as done by typing the keyword following 
+ * by the index of task that is intended to be marked
+ */
+class MarkHandler extends UndoableCommandHandler {
+
+    private static final String HELP_MESSAGE = "%1$s [index]\n\t mark a task as done\n";
+    private static final String INVALID_INDEX_MESSAGE = "Nothing to mark for %1$s\n";
+    private static final String MARKED_MESSAGE = "Marked %1$s as done and archieved\n";
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("mark", "done", "m"));
+    private ArrayList<Task> markedTask = new ArrayList<Task>();
+
+    private String goodFeedback = "",
+                   badFeedback = "";
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+
+        String[] token = parameter.split(" ");
+        if (isHelp(token) || isEmpty(parameter)) {
+            return getHelp(command);
+        }
+
+        try {
+            IndexParser ip = new IndexParser(parameter);
+            ip.getIndex();
+            markByIndex(taskList, token);
+        } catch (NumberFormatException nfe) {
+            markByKeyword(taskList, parameter);
+        }              
+        recordChanges(taskList);
+        
+        for (Task done: markedTask) {
+            memory.markDone(done);
+        }        
+        if (!goodFeedback.equals("")) {
+            return String.format(MARKED_MESSAGE, goodFeedback);
+        } else {
+            return String.format(INVALID_INDEX_MESSAGE, badFeedback);
+        }
+        
+    }
+
+    /**
+     * Mark the first task that contains the keyword given
+     * @param taskList
+     * @param parameter
+     * @throws Exception
+     */
+    private void markByKeyword(ArrayList<Task> taskList, String parameter)
+            throws Exception {
+        MainParser parser = new MainParser(parameter);
+        ArrayList<Task> searchList = memory.searchDescription(parser.getDescription());
+        markKeyword:
+        for (Task task: searchList) {
+            if (taskList.contains(task) && task.getStatus().equals("undone")) {
+                markedTask.add(task);
+                goodFeedback += task.getDescription();
+                break markKeyword;                     
+            }                
+        }
+    }
+
+    /**
+     * Mark the tasks by the indexes shown in UI
+     * @param taskList
+     * @param token
+     */
+    private void markByIndex(ArrayList<Task> taskList, String[] token) throws Exception{
+        IndexParser parser;
+        for (String t: token) {
+            parser = new IndexParser(t);
+            try {
+                int index = parser.getIndex() - 1;
+                markedTask.add(taskList.get(index));
+                goodFeedback += t + " ";
+            } catch (NumberFormatException nfe) {
+                badFeedback += t + " ";
+            } catch (IndexOutOfBoundsException iob) {
+                badFeedback += t + " ";
+            } 
+        }
+    }
+
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        markedTask.clear();
+        goodFeedback = "";
+        badFeedback = "";
+    }
+
+    /**
+     * check if the argument user typed is empty
+     * @param parameter
+     * @return
+     */
+    private boolean isEmpty(String parameter) {
+        return parameter.trim().equals("");
+    }
+
+    /**
+     * check if user is looking for help
+     * @param token
+     * @return
+     */
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().trim().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder markRecorder = new UndoRedoRecorder(taskList);
+        
+        for (Task task: markedTask) {
+            taskList.remove(task);
+            memory.markDone(task);
+            markRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.MARK, task, task));
+        }
+        if (!markRecorder.isEmpty()) {
+            markRecorder.recordUpdatedList(taskList);
+            undoRedoManager.addNewRecord(markRecorder);
+        }
+    }
+}
+
+	// End of segment: E:\main\src\logic\MarkHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\RedoHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import parser.IndexParser;
+import application.Task;
+
+/**
+ * CommandHandler for "redo" function
+ * This class will access the undoRedoManager and see if redo actions can be
+ * executed. Prompt message to user if no action or not enough actions can be undone,
+ * otherwise revert the changes of memory and tasklist in LogicController
+ *
+ */
+class RedoHandler extends UndoableCommandHandler {
+    
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("redo", "r"));
+    private static final String REDO_STEPS_MESSAGE = "Repeated last %1$s changes\n";
+    private static final String HELP_MESSAGE = "%1$s\n\t discard the undo actions";        
+
+    @Override
+    void reset() {
+        
+    }
+    
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) {
+        int steps = 0;
+        String[] token = parameter.split(" ");
+        if (isHelp(token)) {
+            return getHelp(command);
+        }
+        
+        if (isRedoOnly(parameter)) {
+            if (undoRedoManager.canRedo()) {
+                updateTaskList(taskList);
+                return "The last undo has been discarded\n";
+            }
+            else {                  
+                return "Nothing to redo\n";
+            }
+        }
+        else {
+            if (isAll(token[0])) {
+                while (undoRedoManager.canRedo()) {
+                    updateTaskList(taskList);
+                }
+                return "All undos has been repeated\n";
+            }
+            try {
+                IndexParser ip = new IndexParser(token[0]);
+                steps = ip.getIndex();
+            } catch (NumberFormatException nfe) {
+                return "Invalid steps to redo\n";
+            }
+            if (steps > undoRedoManager.getRedoSize()) {
+                return "Not enought steps to redo\n";
+            }
+            else {
+                for (int i = 0; i < steps; i++) {
+                    updateTaskList(taskList);
+                }
+                return String.format(REDO_STEPS_MESSAGE, Integer.toString(steps));
+            }
+        }
+    }
+
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().equals("help");
+    }
+    
+    private boolean isAll(String string) {
+        return string.toLowerCase().trim().equals("all");
+    }
+    
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(undoRedoManager.redo());
+    }
+    
+    private boolean isRedoOnly(String parameter) {
+        return parameter.toLowerCase().trim().equals("");
+    }
+    
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        
+    }
+}
+
+	// End of segment: E:\main\src\logic\RedoHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\SetLocationHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import storage.DatabaseLocationChanger;
+
+public class SetLocationHandler extends CommandHandler {
+
+    private static final String INVALID_PATH_MESSAGE = "Invalid path!\n";
+    private static final String NEW_LOCATION_MESSAGE = "The file is now saved to %1$s\n";
+    private static final String HELP_MESSAGE = "%1$s <path>\n\t set the directory that tasks will be saved to\n";
+    
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("setlocation", "saveto", "st"));
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) {
+        DatabaseLocationChanger dlc = new DatabaseLocationChanger();
+        String[] token = parameter.split(" ");
+        if (isHelp(token)) {
+            return getHelp(command);
+        }
+        
+        if (dlc.setDatabaseLocation(parameter)) {
+            return String.format(NEW_LOCATION_MESSAGE, parameter);
+        }
+        else {
+            return INVALID_PATH_MESSAGE;
+        }
+   
+    }
+
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        // TODO Auto-generated method stub
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+}
+
+	// End of segment: E:\main\src\logic\SetLocationHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\ShowHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.text.ParseException;
+import application.Task;
+import parser.MainParser;
+
+/**
+ * Command handler for showing/searching tasks
+ * 
+ * 
+ * showing all tasks in the taskList by passing no
+ * parameters OR search for tasks containing the 
+ * keyword
+ */
+class ShowHandler extends CommandHandler{
+
+    private static final String HELP_MESSAGE = "%1$s\n\t show all tasks in TaskManager\nshow [keyword]\n\t show all tasks containing the keyword\n";
+    private static final String EMPTY_LIST_MESSAGE = "There is no %1$stask\n";
+    private static final String FOUND_DATE_MESSAGE = "Showing tasks on %1$s\n";
+    private static final String NOT_FOUND_DATE_MESSAGE = "No tasks on %1$s\n";
+    private static final String FOUND_DATE_BEWTWEEN_MESSAGE = "Showing tasks from %1$s to %2$s\n";
+    private static final String NOT_FOUND_DATE_BETWEEN_MESSAGE = "There are no task from %1$s to %2$s\n";
+    private static final String NOT_FOUND_MESSAGE = "No task containing %1$s\n";
+    private static final String FOUND_MESSAGE = "Showing all tasks containing \"%1$s\"\n";
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("show", "s", "display", "search"));
+
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception{
+        
+        String[] token = parameter.split(" ");
+        if (isHelp(token)) {
+            return getHelp(command);
+        }
+
+        if (isSearchStatus(parameter)) {
+            return searchStatus(parameter, taskList);
+        }
+        
+        parameter = extractWeek(parameter);    
+        
+        MainParser parser = new MainParser(parameter);
+        String searchType = parser.getTaskType();
+        if (isKeywordSearch(searchType)) {
+            String keyword = parser.getDescription();
+            return searchKeyword(keyword, taskList);            
+        }    
+        else if (searchType.equals("deadline")) {
+            if (parser.getEndTime().equals("23:59")) {
+                String date = parser.getEndDate().split(" ")[1];
+                return searchDate(date, taskList);
+            } 
+            else {
+                String time = parser.getEndDate().split(" ")[1] + " " + parser.getEndTime();
+                return searchTime(time, taskList);
+            }
+        }
+        else if (searchType.equals("time task")) {
+            if (parser.getEndTime().equals("23:59") && parser.getStartTime().equals("23:59")) {
+                String startDate = parser.getStartDate().split(" ")[1];
+                String endDate = parser.getEndDate().split(" ")[1];
+                return searchDate(startDate, endDate, taskList);
+            }
+            else {
+                String startTime = parser.getStartDate().split(" ")[1] + " " + parser.getStartTime(),
+                        endTime = parser.getEndDate().split(" ")[1] + " " + parser.getEndTime();
+                return searchTime(startTime, endTime, taskList);
+            }
+        }
+        else {
+            return "";
+        }
+    }
+
+    private String extractWeek(String parameter) {
+        parameter = parameter.replaceFirst("this week", "this Monday to Friday");
+        parameter = parameter.replaceFirst("next week", "next Monday to next Friday");
+        return parameter;
+    }
+
+    private boolean isKeywordSearch(String searchType) {
+        return searchType.equals("floating task");
+    }
+
+    /**
+     * search the memory by the keyword if the task contains the keyword
+     * @param keyword keyword to be searched
+     * @param taskList - tasklist to be shown to user
+     * @return feedback of search result
+     */
+    private String searchKeyword(String keyword, ArrayList<Task> taskList) {
+        ArrayList<Task> searchList = memory.searchDescription(keyword);
+        if (searchList.isEmpty()) {
+            return String.format(NOT_FOUND_MESSAGE, keyword);
+        }
+        else {
+            updateTaskList(taskList, searchList);
+            return String.format(FOUND_MESSAGE, keyword);
+        }
+    }
+    
+    /**
+     * search the memory for tasks that occurs on the date specified.
+     * Deadline task with same date of the intended date will be added to taskList.
+     * Time task that occurs on the day will be added to taskList
+     * @param date intended date to be searched
+     * @param taskList taskList to be shown to user
+     * @return feedback string
+     */
+    private String searchDate(String date, ArrayList<Task> taskList) {
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        try {
+            searchList = memory.searchDate(date);
+        } catch (ParseException pe) {
+            return "Error parsing date\n";
+        }
+        if (searchList.isEmpty()) {
+            return String.format(NOT_FOUND_DATE_MESSAGE, date);
+        }
+        else {
+            updateTaskList(taskList, searchList);
+            return String.format(FOUND_DATE_MESSAGE, date);
+        }
+    }
+    
+    /**
+     * search the memory for tasks that occurs on the time specified.
+     * Deadline task with time of one hour difference will be added to taskList.
+     * Time task that occurs on the time will be added to taskList
+     * @param date intended date to be searched
+     * @param taskList taskList to be shown to user
+     * @return feedback string
+     */
+    private String searchTime(String time, ArrayList<Task> taskList) {
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        try {
+            searchList = memory.searchTime(time);
+        } catch (ParseException pe) {
+            return "Error parsing time\n";
+        }
+        if (searchList.isEmpty()) {
+            return String.format(NOT_FOUND_DATE_MESSAGE, time);
+        }
+        else {
+            updateTaskList(taskList, searchList);
+            return String.format(FOUND_DATE_MESSAGE, time);
+        }
+    }
+    
+    /**
+     * search the memory for tasks that occurs on the time specified.
+     * Deadline task with time of one hour difference will be added to taskList.
+     * Time task that occurs on the time will be added to taskList
+     * @param date intended date to be searched
+     * @param taskList taskList to be shown to user
+     * @return feedback string
+     */
+    private String searchTime(String startTime, String endTime, ArrayList<Task> taskList) {
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        try {
+            searchList = memory.searchTime(startTime, endTime);
+        } catch (ParseException pe) {
+            return "Error parsing time\n";
+        }
+        if (searchList.isEmpty()) {
+            return String.format(NOT_FOUND_DATE_BETWEEN_MESSAGE, startTime, endTime);
+        }
+        else {
+            updateTaskList(taskList, searchList);
+            return String.format(FOUND_DATE_BEWTWEEN_MESSAGE, startTime, endTime);
+        }
+    }
+    /**
+     * search the memory for tasks that occurs on the date specified.
+     * Deadline task with same date of the intended date will be added to taskList.
+     * Timetask that occurs on the day will be added to taskList
+     * @param date intended date to be searched
+     * @param taskList taskList to be shown to user
+     * @return feedback string
+     */
+    private String searchDate(String startDate, String endDate, ArrayList<Task> taskList) {
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        try {
+            searchList = memory.searchDate(startDate, endDate);
+        } catch (ParseException pe) {
+            return "Error parsing date\n";
+        }
+        if (searchList.isEmpty()) {
+            return String.format(NOT_FOUND_DATE_BETWEEN_MESSAGE, startDate, endDate);
+        }
+        else {
+            updateTaskList(taskList, searchList);
+            return String.format(FOUND_DATE_BEWTWEEN_MESSAGE, startDate, endDate);
+        }
+    }
+    
+    /**
+     * check if the user is searching different status of tasks
+     * @param parameter input from user
+     * @return true if any of the status is needed to be shown
+     */
+    private boolean isSearchStatus(String parameter) {
+        parameter = parameter.trim().toLowerCase();
+        return (parameter.equals("undone") || parameter.equals("done") ||
+                parameter.equals("all") || parameter.equals(""));
+    }
+    
+    /**
+     * Show different status of tasks 
+     * @param parameter the status of the task that user want to show
+     * @param taskList taskList to be displayed
+     * @return feedback string
+     */
+    private String searchStatus(String parameter, ArrayList<Task> taskList) {
+        String feedback = new String();
+        if (isEmpty(parameter) || isUndone(parameter)) {
+            searchUndoneTasks(taskList);
+            if (taskList.isEmpty()) {
+                feedback = String.format(EMPTY_LIST_MESSAGE, "undone ");
+            }
+            else {
+                feedback = "Displaying all undone tasks\n";
+            }
+        }
+        else {
+            if (isDone(parameter)) {
+                searchDoneTasks(taskList);
+                if (taskList.isEmpty()) {
+                    feedback = String.format(EMPTY_LIST_MESSAGE, "done ");
+                }
+                else {
+                    feedback = "Displaying all done tasks\n";
+                }
+            } 
+            else if (isAll(parameter)){
+                searchAllTasks(taskList);
+                if (taskList.isEmpty()) {
+                    feedback = String.format(EMPTY_LIST_MESSAGE, "");
+                }
+                else {
+                    feedback = "Displaying all tasks\n";
+                }
+            }
+        }
+        return feedback;
+    }
+    
+    /**
+     * check if the string given is String "all"
+     * @param parameter
+     * @return true if the String is "all"
+     */
+    private boolean isAll(String parameter) {
+        return parameter.trim().toLowerCase().equals("all");
+    }
+
+    /**
+     * check if the string given is String "done"
+     * @param parameter
+     * @return true if the String is "done"
+     */
+    private boolean isDone(String parameter) {
+        return parameter.trim().toLowerCase().equals("done");
+    }
+    
+    /**
+     * show all the tasks that has the status of done
+     * @param taskList
+     */
+    private void searchDoneTasks(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(0, memory.searchStatus("done"));
+    }
+    
+    /**
+     * show all the tasks that has the status of undone
+     * @param taskList
+     */
+    private void searchUndoneTasks(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(0, memory.searchStatus("undone"));
+    }
+    
+    /**
+     * show all the tasks 
+     * @param taskList
+     */
+    private void searchAllTasks(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(0, memory.getTaskList());
+    }
+
+    /**
+     * update the taskList in LogicController and write changes to Memory
+     * @param taskList
+     * @param searchList
+     */
+    private void updateTaskList(ArrayList<Task> taskList,
+            ArrayList<Task> searchList) {
+        taskList.clear();
+        taskList.addAll(0, searchList);
+    }
+
+    /**
+     * check if the string given is empty
+     * @param parameter
+     * @return true if the string is empty
+     */
+    private boolean isEmpty(String parameter) {
+        return parameter.trim().equals("");
+    }
+    
+    /**
+     * check if the parameter given is String "undone"
+     * @param parameter
+     * @return true if the string is "undone"
+     */
+    private boolean isUndone(String parameter) {
+        return parameter.trim().equals("undone");
+    }
+
+    /**
+     * check if user if looking for help 
+     * @param token
+     * @return
+     */
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().trim().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+}
+
+	// End of segment: E:\main\src\logic\ShowHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UndoableCommandHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+
+import application.Task;
+
+/**
+ * All handlers that performs changes to memory (such as add, delete or edit)
+ * shall extend this class. UndoHandlers and RedoHandlers shall also extend this
+ * class to access the changes and be able to revoke them.
+ * UndoRedoManager is provided in this class such that the changes made to memory
+ * by handlers are recorded, which is allowed to undo or redo these actions for 
+ * UndoHandler and RedoHandler
+ *
+ */
+abstract class UndoableCommandHandler extends CommandHandler {
+    
+    UndoRedoManager undoRedoManager = UndoRedoManager.getInstance();
+    
+    /**
+     * reset the handler for recording new changes
+     */
+    abstract void reset();
+    
+    @Override
+    abstract ArrayList<String> getAliases();
+
+    @Override
+    abstract String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception;
+
+    @Override
+    abstract public String getHelp(String command);
+
+    /**
+     * Record the changes made to memory and generate a UndoRedoRecorder
+     * for recording purpose. TaskList in LogicController is then updated
+     * @param taskList
+     */
+    abstract void recordChanges(ArrayList<Task> taskList);
+}
+
+	// End of segment: E:\main\src\logic\UndoableCommandHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UndoHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import parser.IndexParser;
+/**
+ * CommandHandler for "undo" function
+ * This class will access the undoRedoManager and see if undo actions can be
+ * executed. Prompt message to user if no action or not enough actions can be undone,
+ * otherwise revert the changes of memory and tasklist in LogicController.
+ *
+ */
+class UndoHandler extends UndoableCommandHandler {
+
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("undo", "u"));
+    private static final String UNDO_STEPS_MESSAGE = "Revoked last %1$s changes\n";
+    private static final String HELP_MESSAGE = "%1$s\n\t revoke latest change";
+    @Override
+    void reset() {
+        
+    }
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) {
+        int steps = 0;
+        String[] token = parameter.split(" ");
+        if (isHelp(token[0])) {
+            return getHelp(command);
+        }
+
+        if (isUndoOnly(parameter)) {
+            if (undoRedoManager.canUndo()) {
+                updateTaskList(taskList);
+                return "The last change has been discarded\n";
+            }
+            else {                  
+                return "Nothing to undo\n";
+            }
+        }
+        else {
+            if (isAll(token[0])) {
+                while (undoRedoManager.canUndo()) {
+                    updateTaskList(taskList);
+                }
+                return "All changes has been discarded\n";
+            }
+            else {
+                try {
+                    IndexParser ip = new IndexParser(token[0]);
+                    steps = ip.getIndex();
+                } catch (NumberFormatException nfe) {
+                    return "Invalid steps to undo\n";
+                }
+                if (steps > undoRedoManager.getUndoSize()) {
+                    return "Not enought steps to undo\n";
+                }
+                else {
+                    for (int i = 0; i < steps; i++) {
+                        updateTaskList(taskList);
+                    }
+                    return String.format(UNDO_STEPS_MESSAGE, Integer.toString(steps));
+                }
+            } 
+        }
+    }
+
+    private boolean isAll(String string) {
+        return string.toLowerCase().trim().equals("all");
+    }
+
+    private void updateTaskList(ArrayList<Task> taskList) {
+        taskList.clear();
+        taskList.addAll(undoRedoManager.undo());
+    }
+
+    private boolean isUndoOnly(String parameter) {
+        return parameter.toLowerCase().trim().equals("");
+    }
+
+    private boolean isHelp(String parameter) {
+        return parameter.toLowerCase().equals("help");
+    }
+
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+    @Override
+    void recordChanges(ArrayList<Task> taskList) {
+        
+    }
+}
+
+	// End of segment: E:\main\src\logic\UndoHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UndoRedoAction.java
+	 */
+
+package logic;
+
+import application.Task;
+import storage.Memory;
+/**
+ * This class serves as a record for all UndoableCommandHandlers
+ * when they perform a single change to memory class. There are two methods
+ * in this class: undo and redo. 
+ * 
+ */
+class UndoRedoAction {
+    public static enum ActionType {
+        ADD, DELETE, EDIT, MARK, UNMARK
+    };
+    Memory memory = Memory.getInstance();
+    private ActionType action;
+    private Task oldTask, newTask;
+//  private String oldPath, newPath;
+
+    /**
+     * Construct a new new record associating with task changes of edit
+     * @param action - ActionType other than SETLOCATION
+     * @param oldTask - task that has been removed from memory
+     * @param newTask - task that has been added to memory
+     * 
+     */
+    UndoRedoAction(ActionType action, Task oldTask, Task newTask) {
+        this.action = action;
+        this.oldTask = oldTask;
+        this.newTask = newTask;
+    }
+
+//    /**
+//     * not implementing undo or redo for set location  
+//     * Construct a new record associating with path changes
+//     * @param action - Actiontype SETLOCATION
+//     * @param oldPath - old path of storage
+//     * @param newPath - new path of storage
+//     */
+//    UndoRedoAction(ActionType action, String oldPath, String newPath) {
+//        this.action = action;
+//        this.oldPath = oldPath;
+//        this.newPath = newPath;
+//    }
+
+    ActionType getActionType() {
+        return action;
+    }
+
+    Task getOldTask() {
+        return oldTask;
+    }
+
+    Task getNewTask() {
+        return newTask;
+    }
+    
+//  * not implementing undo or redo for set location 
+//    public String getOldPath() {
+//        return oldPath;
+//    }
+//
+//    public String getNewPath() {
+//        return newPath;
+//    }
+
+    boolean undo() {
+        switch (action) {
+            case ADD:
+                return (memory.removeTask(getNewTask()) != null);
+            case DELETE:
+                return (memory.addTask(getOldTask()) >= 0);                
+            case EDIT:
+                return ((memory.addTask(getOldTask()) == 1 && (memory.removeTask(getNewTask()) != null)));
+            case MARK:
+                memory.markUndone(getOldTask());
+                return true;
+            case UNMARK:
+                memory.markDone(getOldTask());
+            default:
+                return false;
+        }
+    }
+
+    boolean redo() {
+        switch (action) {
+            case ADD:
+                return (memory.addTask(getNewTask()) >= 0);
+            case DELETE:
+                return (memory.removeTask(getOldTask()) != null);
+            case EDIT:
+                return ((memory.addTask(getNewTask()) == 1 && (memory.removeTask(getOldTask()) != null)));
+            case MARK:
+                memory.markDone(getNewTask());
+                return true;
+            case UNMARK:
+                memory.markUndone(getNewTask());
+                return true;
+            default:
+                return false;
+        }
+    }
+}
+
+	// End of segment: E:\main\src\logic\UndoRedoAction.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UndoRedoManager.java
+	 */
+
+package logic;
+
+import java.util.Stack;
+import java.util.ArrayList;
+import application.Task;
+
+/**
+ * This class manages all the actions that perform changes to 
+ * memory by UndoableCommandHandlers. A redo stack is also implemented
+ * to record actions that has been called for undo for redo purposes
+ *
+ */
+class UndoRedoManager {
+
+    private static UndoRedoManager undoRedoManager;
+    private Stack<UndoRedoRecorder> undo, redo;
+    
+    private UndoRedoManager() {
+        undo = new Stack<UndoRedoRecorder>();
+        redo = new Stack<UndoRedoRecorder>();
+    }
+    
+    static UndoRedoManager getInstance() {
+        if (undoRedoManager == null) {
+            undoRedoManager = new UndoRedoManager();
+        }
+        return undoRedoManager;
+    }
+    
+    void addNewRecord(UndoRedoRecorder newRecord) {
+        undo.push(newRecord);
+        redo.clear();
+    }
+    
+    boolean canUndo() {
+        return !undo.isEmpty();
+    }
+    
+    int getUndoSize() {
+        return undo.size();
+    }
+    
+    int getRedoSize() {
+        return redo.size();
+    }
+    
+    boolean canRedo() {
+        return !redo.isEmpty();
+    }
+    
+    ArrayList<Task> undo() {
+        if (canUndo()) {
+            UndoRedoRecorder latestChange = undo.pop();
+            latestChange.performUndo();
+            redo.push(latestChange);
+            return latestChange.getCurrentTaskList();
+        }
+        else {
+            return new ArrayList<Task>();
+        }
+    }
+    
+    ArrayList<Task> redo() { 
+        if (canRedo()) {
+            UndoRedoRecorder lastChange = redo.pop();
+            lastChange.performRedo();
+            undo.push(lastChange);
+            return lastChange.getChangedTaskList();
+        }
+        else {
+            return new ArrayList<Task>();
+        }
+    }
+}
+
+	// End of segment: E:\main\src\logic\UndoRedoManager.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UndoRedoRecorder.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Stack;
+import application.Task;
+/**
+ * This class records all the actions performed during each single
+ * line of command that user enters and successfully implemented to the system.
+ * Multiple actions completed in a single line of command (such as deleting multiple
+ * tasks) are recorded in one recorder.
+ * 
+ */
+public class UndoRedoRecorder {
+
+    private Stack<UndoRedoAction> actions = new Stack<UndoRedoAction>();
+    private ArrayList<Task> currentTaskList = new ArrayList<Task>();
+    private ArrayList<Task> changedTaskList = new ArrayList<Task>();
+    
+    UndoRedoRecorder(ArrayList<Task> taskList) {
+        currentTaskList.clear();
+        currentTaskList.addAll(taskList);
+    }
+    
+    void recordUpdatedList(ArrayList<Task> updatedList) {
+        changedTaskList.clear();
+        changedTaskList.addAll(updatedList);
+    }
+    void appendAction(UndoRedoAction newAction) {
+        actions.push(newAction);
+    }
+    
+    ArrayList<Task> getCurrentTaskList() {
+        return currentTaskList;
+    }
+    
+    ArrayList<Task> getChangedTaskList() {
+        return changedTaskList;
+    }
+    
+    void performUndo() {
+        for (UndoRedoAction ura: actions) {
+            ura.undo();
+        }
+    }
+    
+    void performRedo() {
+        for (UndoRedoAction ura: actions) {
+            ura.redo();
+        }
+    }
+    
+    boolean isEmpty() {
+        return actions.isEmpty();
+    }
+}
+
+	// End of segment: E:\main\src\logic\UndoRedoRecorder.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\logic\UnmarkHandler.java
+	 */
+
+package logic;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import application.Task;
+import parser.IndexParser;
+import parser.MainParser;
+/**
+ * CommandHandler for "mark" function
+ * 
+ * Mark a task as done by typing the keyword following 
+ * by the index of task that is intended to be marked
+ */
+class UnmarkHandler extends UndoableCommandHandler {
+
+    private static final String HELP_MESSAGE = "%1$s [index]\n\t mark a task as done\n";
+    private static final String INVALID_INDEX_MESSAGE = "Nothing to unmark for %1$s\n";
+    private static final String MARKED_MESSAGE = "Marked %1$s as done and archieved\n";
+    private ArrayList<String> aliases = new ArrayList<String>(
+            Arrays.asList("unmark", "undone", "um"));
+    private ArrayList<Task> unmarkedTask = new ArrayList<Task>();
+
+    private String goodFeedback = "",
+                   badFeedback = "";
+    @Override
+    protected ArrayList<String> getAliases() {
+        return aliases;
+    }
+
+    @Override
+    protected String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception {
+        reset();
+
+        String[] token = parameter.split(" ");
+        if (isHelp(token) || isEmpty(parameter)) {
+            return getHelp(command);
+        }
+
+        try {
+            IndexParser ip = new IndexParser(parameter);
+            ip.getIndex();
+            unmarkByIndex(taskList, token);
+        } catch (NumberFormatException nfe) {
+            unmarkByKeyword(taskList, parameter);
+        }              
+        recordChanges(taskList);
+        
+        for (Task undone: unmarkedTask) {
+            memory.markUndone(undone);
+        }        
+        if (!goodFeedback.equals("")) {
+            return String.format(MARKED_MESSAGE, goodFeedback);
+        } else {
+            return String.format(INVALID_INDEX_MESSAGE, badFeedback);
+        }
+        
+    }
+
+    /**
+     * Mark the first task that contains the keyword given
+     * @param taskList
+     * @param parameter
+     * @throws Exception
+     */
+    private void unmarkByKeyword(ArrayList<Task> taskList, String parameter)
+            throws Exception {
+        MainParser parser = new MainParser(parameter);
+        ArrayList<Task> searchList = memory.searchDescription(parser.getDescription());
+        markKeyword:
+        for (Task task: searchList) {
+            if (taskList.contains(task) && task.getStatus().equals("done")) {
+                unmarkedTask.add(task);
+                goodFeedback += task.getDescription();
+                break markKeyword;                     
+            }                
+        }
+    }
+
+    /**
+     * Mark the tasks by the indexes shown in UI
+     * @param taskList
+     * @param token
+     */
+    private void unmarkByIndex(ArrayList<Task> taskList, String[] token) throws Exception{
+        IndexParser parser;
+        for (String t: token) {
+            parser = new IndexParser(t);
+            try {                
+                int index = parser.getIndex() - 1;
+                unmarkedTask.add(taskList.get(index));
+                goodFeedback += t + " ";
+            } catch (NumberFormatException nfe) {
+                badFeedback += t + " ";
+            } catch (IndexOutOfBoundsException iob) {
+                badFeedback += t + " ";
+            } 
+        }
+    }
+
+    /**
+     * reset the handler when it is called
+     */
+    @Override
+    void reset() {
+        unmarkedTask.clear();
+        goodFeedback = "";
+        badFeedback = "";
+    }
+
+    /**
+     * check if the argument user typed is empty
+     * @param parameter
+     * @return
+     */
+    private boolean isEmpty(String parameter) {
+        return parameter.trim().equals("");
+    }
+
+    /**
+     * check if user is looking for help
+     * @param token
+     * @return
+     */
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().trim().equals("help");
+    }
+    
+    @Override
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
+    }
+    
+    void recordChanges(ArrayList<Task> taskList) {
+        UndoRedoRecorder markRecorder = new UndoRedoRecorder(taskList);
+        
+        for (Task task: unmarkedTask) {
+            taskList.get(taskList.indexOf(task)).setStatus("undone");
+            memory.markUndone(task);
+            markRecorder.appendAction(new UndoRedoAction(UndoRedoAction.ActionType.UNMARK, task, task));
+        }
+        if (!markRecorder.isEmpty()) {
+            markRecorder.recordUpdatedList(taskList);
+            undoRedoManager.addNewRecord(markRecorder);
+        }
+    }
+}
+
+	// End of segment: E:\main\src\logic\UnmarkHandler.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * search the list that the task that is occurring on this time, showing the uncompleted tasks only
+     * @param time time that the task is occurring
+     * @return result arraylist containing the tasks occurs on the time
+     */
+    public ArrayList<Task> searchTime(String time) throws ParseException {
+        assert isValidKeyword(time);
+        ArrayList<Task> searchList = new ArrayList<Task>();    
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDateTime target = LocalDateTime.parse(time, formatter);
+        for (Task task: taskList) {
+            if (task.getStatus().equals("done")) {
+                continue;
+            }
+            if (task.getTaskType().equals("deadline")) {
+                String suspectDeadline = task.getEndDate() + " " + task.getEndTime();
+                LocalDateTime suspectStart = LocalDateTime.parse(suspectDeadline, formatter), 
+                        suspectEnd = LocalDateTime.parse(suspectDeadline, formatter);
+                if (isWithinOneHour(target, suspectStart, suspectEnd)) {
+                    searchList.add(task);
+                }
+            }
+            else if (task.getTaskType().equals("time task")) {
+                String suspectStart = task.getStartDate() + " " + task.getStartTime(),
+                        suspectEnd = task.getEndDate() + " " + task.getEndTime();
+                LocalDateTime start = LocalDateTime.parse(suspectStart, formatter),
+                        end = LocalDateTime.parse(suspectEnd, formatter);
+                if (isBetweenTime(start, end, target)) {
+                    searchList.add(task);
+                }
+            }
+        }
+        return searchList;
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * check if the target time is within one hour of the time given
+     * @param target
+     * @param suspectStart
+     * @param suspectEnd
+     * @return true if the target is within before or after one hour of the time given
+     */
+    private boolean isWithinOneHour(LocalDateTime target,
+            LocalDateTime suspectStart, LocalDateTime suspectEnd) {
+        return !suspectStart.minusHours(1).isAfter(target) && !suspectEnd.plusHours(1).isBefore(target);
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * search the list that the task that is occurring between the time given this time
+     * @param time time that the task is occurring
+     * @return result arraylist containing the tasks occurs on the time
+     */
+    public ArrayList<Task> searchTime(String start, String end) throws ParseException {
+        assert isValidKeyword(start);
+        assert isValidKeyword(end);
+        ArrayList<Task> searchList = new ArrayList<Task>();    
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        LocalDateTime targetStart = LocalDateTime.parse(start, formatter),
+                targetEnd = LocalDateTime.parse(end, formatter);
+        for (Task task: taskList) {
+            if (task.getStatus().equals("done")) {
+                continue;
+            }
+            if (task.getTaskType().equals("deadline")) {
+                String suspectDeadline = task.getEndDate() + " " + task.getEndTime();
+                LocalDateTime suspect = LocalDateTime.parse(suspectDeadline, formatter);
+                if (isBetweenTime(targetStart, targetEnd, suspect)) {
+                    searchList.add(task);
+                }
+            }
+            else if (task.getTaskType().equals("time task")) {
+                String suspectStartString = task.getStartDate() + " " + task.getStartTime(),
+                        suspectEndString = task.getEndDate() + " " + task.getEndTime();
+                LocalDateTime suspectStart = LocalDateTime.parse(suspectStartString, formatter),
+                        suspectEnd = LocalDateTime.parse(suspectEndString, formatter);
+                if (isBetweenTime(targetStart, targetEnd, suspectStart, suspectEnd)) {
+                    searchList.add(task);
+                }
+            }
+        }
+        return searchList;
+    }
+
+
+    /**
+     * check if there is any overlapping of the two time periods
+     * @param targetStart
+     * @param targetEnd
+     * @param suspectStart
+     * @param suspectEnd
+     * @return true if there is any overlapping
+     */
+    private boolean isBetweenTime(LocalDateTime targetStart,
+            LocalDateTime targetEnd, LocalDateTime suspectStart,
+            LocalDateTime suspectEnd) {
+        return (!suspectStart.isAfter(targetEnd) && !suspectStart.isBefore(targetStart)) || 
+                (!suspectEnd.isBefore(targetStart) && (!suspectStart.isAfter(targetEnd)));
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * check if a time given is between the two time given
+     * @param targetStart the target of start of the time
+     * @param targetEnd the target of end of the time
+     * @param suspect the time that is been checked
+     * @return true if suspect falls within the range given (inclusively)
+     */ 
+    private boolean isBetweenTime(LocalDateTime targetStart,
+            LocalDateTime targetEnd, LocalDateTime suspect) {
+        return !suspect.isAfter(targetEnd) && !suspect.isBefore(targetStart);
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * search the list that the task that is occurring on this particular time
+     * for time task, this point of time shall be in the lapse of the task;
+     * for deadline task, search for deadlines that occurs within one hour of the 
+     * specified time
+     * @param dateTime - time that the task is occurring
+     * @return result arraylist containing the tasks occurs on the day
+     */      
+    public ArrayList<Task> searchDate(String date) throws ParseException{
+        assert isValidKeyword(date);
+        ArrayList<Task> searchList = new ArrayList<Task>();        
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Calendar targetDate = Calendar.getInstance();
+        targetDate.setTime(sdf.parse(date));
+        for (Task task: taskList) {
+            if (task.getStatus().equals("done")) {
+                continue;
+            }
+            if (task.getTaskType().equals("deadline")) {
+                Calendar suspectDate = Calendar.getInstance();
+                String endDate = task.getEndDate();
+                suspectDate.setTime(sdf.parse(endDate));               
+                if (isSameDate(targetDate, suspectDate)) {
+                    searchList.add(task);
+                }
+            }
+            else if (task.getTaskType().equals("time task")) {
+                Calendar suspectStartDate = Calendar.getInstance(),
+                        suspectEndDate = Calendar.getInstance();
+                suspectStartDate.setTime(sdf.parse(task.getStartDate()));
+                suspectEndDate.setTime(sdf.parse(task.getEndDate()));
+                if (isWithinDate(targetDate, suspectStartDate, suspectEndDate)) {
+                    searchList.add(task);
+                }
+            }
+        }        
+        return searchList;
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * search the list that the task that is occurring within the range specified
+     * for time task, the task will be added if anyday of the task falls within the 
+     * range
+     * for deadline task, the task will be added to search listif deadline of the 
+     * task falls within the range  
+     * @param startDate - the start of the date
+     * @param endDate - the start of the time
+     * @return result arraylist containing the tasks occurs on the day
+     */
+    public ArrayList<Task> searchDate(String startDate, String endDate) throws ParseException{
+        assert isValidKeyword(startDate);
+        assert isValidKeyword(endDate);
+        ArrayList<Task> searchList = new ArrayList<Task>();        
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Calendar targetStartDate = Calendar.getInstance(),
+                targetEndDate = Calendar.getInstance();
+        targetStartDate.setTime(sdf.parse(startDate));
+        targetEndDate.setTime(sdf.parse(endDate));
+
+        for (Task task: taskList) {
+            if (task.getStatus().equals("done")) {
+                continue;
+            }
+            if (task.getTaskType().equals("deadline")) {
+                Calendar suspectDate = Calendar.getInstance();
+                suspectDate.setTime(sdf.parse(task.getEndDate()));               
+                if (isWithinDate(suspectDate, targetStartDate, targetEndDate)) {
+                    searchList.add(task);
+                }
+            }
+            else if (task.getTaskType().equals("time task")) {
+                Calendar suspectStartDate = Calendar.getInstance(),
+                        suspectEndDate = Calendar.getInstance();
+                suspectStartDate.setTime(sdf.parse(task.getStartDate()));
+                suspectEndDate.setTime(sdf.parse(task.getEndDate()));
+                if (isWithinDate(targetStartDate, targetEndDate, suspectStartDate, suspectEndDate)) {
+                    searchList.add(task);
+                }
+            }
+        }        
+        return searchList;
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * This method checks whether a timed task falls into one range of start date and end date,
+     * or it covers the entire range to be checked
+     * @param targetStartDate
+     * @param targetEndDate
+     * @param suspectStartDate
+     * @param suspectEndDate
+     * @return
+     */ 
+    private boolean isWithinDate(Calendar targetStartDate,
+            Calendar targetEndDate, Calendar suspectStartDate,
+            Calendar suspectEndDate) {
+        return isWithinDate(suspectStartDate, targetStartDate, targetEndDate) ||
+                isWithinDate(suspectEndDate, targetStartDate, targetEndDate) ||
+                isWithinDate(targetStartDate, suspectStartDate, suspectEndDate);
+    }
+
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    /**
+     * check whether the target date is within the range of the suspect date
+     * @param targetDate
+     * @param suspectStartDate
+     * @param suspectEndDate
+     * @return true if target date is within (inclusive) the suspect start and end
+     */     
+    private boolean isWithinDate(Calendar targetDate, Calendar suspectStartDate,
+            Calendar suspectEndDate) {
+        return targetDate.get(Calendar.YEAR) >= suspectStartDate.get(Calendar.YEAR) &&
+                targetDate.get(Calendar.YEAR) <= suspectEndDate.get(Calendar.YEAR) &&
+                targetDate.get(Calendar.DAY_OF_YEAR) >= suspectStartDate.get(Calendar.DAY_OF_YEAR) &&
+                targetDate.get(Calendar.DAY_OF_YEAR) <= suspectEndDate.get(Calendar.DAY_OF_YEAR);
+    }
+
+    
+    /**
+     * check whether the target date is same as suspect date
+     * @param targetDate
+     * @param suspectate
+     * @return true if target date is same as the suspect 
+     */     
+    private boolean isSameDate(Calendar targetDate, Calendar suspectDate) {
+        return targetDate.get(Calendar.DAY_OF_YEAR) == suspectDate.get(Calendar.DAY_OF_YEAR) &&
+                targetDate.get(Calendar.YEAR) == suspectDate.get(Calendar.YEAR);
+    }
+
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
