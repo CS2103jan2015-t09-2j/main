@@ -82,7 +82,6 @@ public class DateParser {
 
     /**
      * 
-     * @param userInput
      * @return String in the format of dd/mm/yyyy and return the current date if
      *         nothing is detected
      */
@@ -93,7 +92,7 @@ public class DateParser {
     /**
      * get the last index of the position of date detected in user input
      * 
-     * @return
+     * @return last index
      */
     public int getIndex() {
         return index;
@@ -151,34 +150,37 @@ public class DateParser {
     }
 
     private String getDateForThisWeek(Calendar calendar) {
-        String dateOfTheTask;
         int todayDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1;
-        dateOfTheTask = getThisWeekayDate(7, todayDayOfWeek);
+        String dateOfTheTask = getThisWeekayDate(WEEK_UNIT, todayDayOfWeek);
         return dateOfTheTask;
     }
 
     private String getDateForThisYear(Calendar calendar, int year) {
-        String dateOfTheTask;
         // set the month to dec (11 is dec month num)
         calendar.set(Calendar.MONTH, 11);
+
         int maxDaysOfDec = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
-        dateOfTheTask = getDateFromCalendar(calendar, year, maxDaysOfDec, 12);
+
+        String dateOfTheTask = getDateFromCalendar(calendar, year,
+                maxDaysOfDec, 12);
         return dateOfTheTask;
     }
 
     private String getDateForThisMonth(Calendar calendar, int month, int year) {
-        String dateOfTheTask;
+
         int maxDaysOfAMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
-        dateOfTheTask = getDateFromCalendar(calendar, year, maxDaysOfAMonth,
-                month);
+        String dateOfTheTask = getDateFromCalendar(calendar, year,
+                maxDaysOfAMonth, month);
         return dateOfTheTask;
     }
 
     private String getDateFromCalendar(Calendar calendar, int year, int day,
             int month) {
+
         DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
-        calendar.set(year, month - 1, day);
+        setDateIntoCalendar(day, month - 1, year, calendar);
         String dateOfTheTask = dateFormat.format(calendar.getTime());
+
         return dateOfTheTask;
     }
 
@@ -228,10 +230,10 @@ public class DateParser {
         String dateOfTheTask = "";
 
         if (todayDayOfWeek == dayOfTheWeek) {
-            dateOfTheTask = addToTheCurrentDateByDays(7);
+            dateOfTheTask = addToTheCurrentDateByDays(WEEK_UNIT);
         } else {
-            dateOfTheTask = addToTheCurrentDateByDays(7 - todayDayOfWeek
-                    + dayOfTheWeek);
+            dateOfTheTask = addToTheCurrentDateByDays(WEEK_UNIT
+                    - todayDayOfWeek + dayOfTheWeek);
         }
 
         return dateOfTheTask;
@@ -243,8 +245,7 @@ public class DateParser {
      * @param userInput
      */
     private void spotWeekMonthYearApartKeyword(String userInput) {
-        String dateOfTheTask = "", uniqueKeyword = "";
-        int numberOfDays = 0, numberOfMonths = 0, numberOfYears = 0;
+        String dateOfTheTask = "";
 
         Pattern dateDetector = Pattern
                 .compile(WEEKS_MONTHS_YEARS_APART_KEYWORD);
@@ -252,23 +253,20 @@ public class DateParser {
         Matcher matchWithIndex = dateDetector.matcher(userInput);
 
         while (containDate.find() && matchWithIndex.find()) {
-            uniqueKeyword = containDate.group();
+            String uniqueKeyword = containDate.group();
             inputLeft = inputLeft.replaceAll(uniqueKeyword, "");
 
             if (uniqueKeyword.contains("week") || uniqueKeyword.contains("wk")) {
 
-                numberOfDays = getNumberOfDaysDetected(uniqueKeyword);
-                dateOfTheTask = addToTheCurrentDateByDays(numberOfDays);
+                dateOfTheTask = getWeekApartDate(uniqueKeyword);
             } else if (uniqueKeyword.contains("month")
                     || uniqueKeyword.contains("mth")) {
 
-                numberOfMonths = getNumberOfMonthDetected(uniqueKeyword);
-                dateOfTheTask = addToTheCurrentDateByMonth(numberOfMonths);
+                dateOfTheTask = getMonthApartDate(uniqueKeyword);
             } else if (uniqueKeyword.contains("year")
                     || uniqueKeyword.contains("yr")) {
 
-                numberOfYears = getNumberOfYearsDetected(uniqueKeyword);
-                dateOfTheTask = addToTheCurrentDateByYear(numberOfYears);
+                dateOfTheTask = getYearApartDate(uniqueKeyword);
             }
 
             storageOfDate.add(dateOfTheTask);
@@ -279,15 +277,54 @@ public class DateParser {
     }
 
     /**
+     * get the date after number of year
+     * 
+     * @param uniqueKeyword
+     * @return date in dd/mm/yyyy
+     */
+    private String getYearApartDate(String uniqueKeyword) {
+        String dateOfTheTask;
+        int numberOfYears;
+        numberOfYears = getNumberOfYearsDetected(uniqueKeyword);
+        dateOfTheTask = addToTheCurrentDateByYear(numberOfYears);
+        return dateOfTheTask;
+    }
+
+    /**
+     * get date after num of month
+     * 
+     * @param uniqueKeyword
+     * @return date in dd/mm/yyyy
+     */
+    private String getMonthApartDate(String uniqueKeyword) {
+        String dateOfTheTask;
+        int numberOfMonths;
+        numberOfMonths = getNumberOfMonthDetected(uniqueKeyword);
+        dateOfTheTask = addToTheCurrentDateByMonth(numberOfMonths);
+        return dateOfTheTask;
+    }
+
+    /**
+     * get the date after number of week
+     * 
+     * @param uniqueKeyword
+     * @return date in dd/mm/yyyy
+     */
+    private String getWeekApartDate(String uniqueKeyword) {
+        String dateOfTheTask;
+        int numberOfDays;
+        numberOfDays = getNumberOfDaysDetected(uniqueKeyword);
+        dateOfTheTask = addToTheCurrentDateByDays(numberOfDays);
+        return dateOfTheTask;
+    }
+
+    /**
      * spot date of this mon-sun could be in short form(mon-sun) or
      * monday-sunday
      * 
      * @param userInput
-     * @throws IllegalArgumentException
-     *             : weekday pass the current weekday.
      */
-    private void spotThisWeekdayApartKeyWord(String userInput)
-            throws IllegalArgumentException {
+    private void spotThisWeekdayApartKeyWord(String userInput) {
         String dateOfTheTask = "", thisWeekdayInput = "";
 
         Pattern dateDetector = Pattern.compile(THIS_WEEKDAY_APART_KEYWORD);
@@ -314,32 +351,21 @@ public class DateParser {
     }
 
     /**
-     * get this week date
+     * get this weekday date
      * 
      * @param dateOfTheTask
      * @param dayOfTheWeek
      * @param todayDayOfWeek
-     * @throws IllegalArgumentException
-     *             : weekday pass the current weekday.
      * @return DD/MM/YYYY
      */
-    private String getThisWeekayDate(int dayOfTheWeek, int todayDayOfWeek)
-            throws IllegalArgumentException {
+    private String getThisWeekayDate(int dayOfTheWeek, int todayDayOfWeek) {
         String dateOfTheTask = "";
-        Logger logger = Logger.getLogger("DateParser");
-        try {
-            logger.log(Level.INFO, "going to start processing");
-            if (todayDayOfWeek <= dayOfTheWeek) {
-                dateOfTheTask = addToTheCurrentDateByDays(dayOfTheWeek
-                        - todayDayOfWeek);
-            } else {
-                throw new IllegalArgumentException(
-                        "This weekday entered has pass!");
-            }
-        } catch (IllegalArgumentException e) {
-            logger.log(Level.FINER, "Weekday entered have passed.");
-            JOptionPane.showMessageDialog(null, e.getMessage());
-            throw new IllegalArgumentException(e.getMessage());
+
+        dateOfTheTask = addToTheCurrentDateByDays(dayOfTheWeek - todayDayOfWeek);
+
+        if (todayDayOfWeek > dayOfTheWeek) {
+            JOptionPane.showMessageDialog(null,
+                    "Take note: Weekday entered have passed.");
         }
 
         return dateOfTheTask;
@@ -521,11 +547,9 @@ public class DateParser {
         Matcher toGetIndex = dateDetector.matcher(userInput);
 
         while (containDate.find() && toGetIndex.find()) {
-            String dateOfTheTask = containDate.group();
-
-            DateFormat date = new SimpleDateFormat(DATE_FORMAT);
             Calendar calendar = Calendar.getInstance();
 
+            String dateOfTheTask = containDate.group();
             dateOfTheTask = removeUnwantedParts(dateOfTheTask);
             int day = NumberParser.getNumber(dateOfTheTask);
             int year = YearParser.getYear(dateOfTheTask);
@@ -539,9 +563,7 @@ public class DateParser {
             testValidMonth(month);
             testValidDay(day, year, month);
 
-            setDateIntoCalendar(day, month - 1, year, calendar);
-            dateOfTheTask = date.format(calendar.getTime());
-
+            dateOfTheTask = getDateFromCalendar(calendar, year, day, month);
             storageOfDate.add(dateOfTheTask);
             inputLeft = inputLeft.replaceAll(keyword, "");
 
@@ -569,8 +591,6 @@ public class DateParser {
      */
     private void spotDDMMYYYYKeyword(String userInput)
             throws IllegalArgumentException {
-        String dateOfTheTask = "";
-
         Pattern dateDetector = Pattern.compile(DDMMYYYY_KEYWORD);
         Matcher containDate = dateDetector.matcher(inputLeft);
         Matcher toGetIndex = dateDetector.matcher(userInput);
@@ -579,7 +599,7 @@ public class DateParser {
             Calendar calendar = Calendar.getInstance();
             inputLeft = inputLeft.replaceAll(DDMMYYYY_KEYWORD, "");
 
-            dateOfTheTask = containDate.group();
+            String dateOfTheTask = containDate.group();
 
             dateOfTheTask = removeUnwantedParts(dateOfTheTask);
 
@@ -590,16 +610,11 @@ public class DateParser {
             testValidMonth(month);
             testValidDay(day, year, month);
 
-            setDateIntoCalendar(day, month - 1, year, calendar);
-
-            DateFormat date = new SimpleDateFormat(DATE_FORMAT);
-            dateOfTheTask = date.format(calendar.getTime());
-
+            dateOfTheTask = getDateFromCalendar(calendar, year, day, month);
             storageOfDate.add(dateOfTheTask);
 
             int indexPositionOfThisDate = toGetIndex.start();
             setThePosition(indexPositionOfThisDate);
-
         }
     }
 
