@@ -1,0 +1,3359 @@
+//@author: a0113966y
+
+
+
+	/**
+	 * origin: E:\main\src\application\Task.java
+	 */
+
+
+package application;
+
+import java.util.ArrayList;
+
+/**
+ * Task is a class that is used to store all the information of a task to be stored in TaskManager
+ * 
+	// End of segment: E:\main\src\application\Task.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\Task.java
+	 */
+
+ *
+ */
+
+public class Task {
+	
+	private static final String[] dataField = {
+		"Task Type",
+		"Description",
+		"Start Time",
+		"End Time",
+		"Status"
+	};
+	
+	private String taskType;
+	private String description;
+	private String startDateTime;
+	private String endDateTime;
+	private String status;
+		
+	public Task(Task task) {
+		this.taskType = task.getTaskType();
+		this.description = task.getDescription();
+		this.startDateTime = task.getStartDateTime();
+		this.endDateTime = task.getEndDateTime();
+		this.status = task.getStatus();
+	}
+	
+	public Task(String taskType, String description, String startDateTime, String endDateTime, String status) {
+		this.taskType = taskType;
+		this.description = description;
+		this.startDateTime = startDateTime;
+		this.endDateTime = endDateTime;
+		this.status = status;
+	}
+	
+	public Task(ArrayList<String> taskInformation) {
+		this.taskType = taskInformation.get(0);
+		this.description = taskInformation.get(1);
+		this.startDateTime = taskInformation.get(2);
+		this.endDateTime = taskInformation.get(3);
+		this.status = taskInformation.get(4);
+	}
+	public void setStartDateTime(String newStartDateTime) {
+		startDateTime = newStartDateTime;
+	}
+	
+	public void setEndDateTime(String newEndDateTime) {
+		endDateTime = newEndDateTime;
+	}
+
+	public void setStatus(String newStatus) {
+		status = newStatus;
+	}
+	
+	public void setTaskType(String newTaskType) {
+		taskType = newTaskType;
+	}
+	
+	public void setDescription(String newDescription) {
+		description = newDescription;
+	}
+	
+	public String getTaskType() {
+		return taskType;
+	}
+	
+	public String getStartDateTime() {	
+		return startDateTime;
+	}
+	
+	public String getEndDateTime() {
+		return endDateTime;
+	}
+	
+	public String getStartDate() {
+		return startDateTime.split(" ")[1];
+	}
+	
+	public String getStartTime() {
+		return startDateTime.split(" ")[2];
+	}
+	
+	public String getEndDate(){
+		return endDateTime.split(" ")[1];
+	}
+	
+	public String getEndTime(){
+		return endDateTime.split(" ")[2];
+	}
+	
+	public String getStatus(){
+		return status;
+	}
+	
+	public String getDescription() {
+		return description;
+	}
+	
+	public String getDateTime() {
+		
+		return getStartDateTime() + " - " + getEndDateTime();
+		
+	}
+	
+	public boolean isDone() {
+		if (status.equals("done")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public String toString() {
+		String str = "";
+		
+		String[] data = {
+			getTaskType(),
+			getDescription(),
+			getStartDateTime(),
+			getEndDateTime(),
+			getStatus()
+		};
+		
+		for (int i = 0; i < dataField.length; i++) {
+			str += String.format("%-20s", dataField[i]) + ": " + String.format("%s", data[i]) + "\n";
+		}
+
+		return str;
+	}
+	
+	public String[] toStringArray() {
+		String[] stringArray = {getTaskType(), getDescription(), getStartDateTime(), getEndDateTime(), getStatus()};
+		return stringArray;
+	}
+
+}
+
+	// End of segment: E:\main\src\application\Task.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskComparator.java
+	 */
+
+
+package application;
+
+import java.util.Comparator;
+
+/**
+ * TaskComparator is used to sort tasks stored in Memory
+ * Time tasks and deadlines are sorted into chronological order before floating task
+ * Starting time of time task and ending time of deadline are used for comparison
+ * 
+	// End of segment: E:\main\src\application\TaskComparator.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskComparator.java
+	 */
+
+ *
+ */
+
+public class TaskComparator implements Comparator<Task> {
+	
+	private static final int PRECEDENCE_TIME_TASK = 2;
+	private static final int PRECEDENCE_DEADLINE = 2;
+	private static final int PRECEDENCE_FLOATING_TASK = 1;
+
+	public int compare(Task task1, Task task2) {
+		if (!isEqualPrecedence(task1, task2)) {
+			return comparePrecedence(task1, task2);
+		} else {
+			if (isFloatingTask(task1)) {
+				return compareFloatingTask(task1, task2);
+			} else {
+				return compareDateTime(task1, task2);			
+			}
+		}
+	}
+
+	public int compareDateTime(Task task1, Task task2) {
+		String dateTime1;
+		String dateTime2;
+		
+		if (isTimeTask(task1)) {
+			dateTime1 = task1.getStartDateTime();
+		} else {
+			dateTime1 = task1.getEndDateTime();
+		}
+		
+		if (isTimeTask(task2)) {
+			dateTime2 = task2.getStartDateTime();
+		} else {
+			dateTime2 = task2.getEndDateTime();
+		}
+		
+		TimeAnalyser ta = new TimeAnalyser();
+		long dateTime1InMilliseconds = ta.getDateTimeInMilliseconds(dateTime1);
+		
+		long dateTime2InMilliseconds = ta.getDateTimeInMilliseconds(dateTime2);
+
+		if (dateTime1InMilliseconds <= dateTime2InMilliseconds) {
+			return -1;
+		} else {
+			return 1;
+		}
+	}
+
+	
+	private boolean isTimeTask(Task task) {
+		if (task.getTaskType().equals("time task")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private boolean isFloatingTask(Task task) {
+		if (task.getTaskType().equals("floating task")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	
+	private int comparePrecedence(Task task1, Task task2) {
+		if (task1.getTaskType().equals("floating task")) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+	
+	private int compareFloatingTask(Task task1, Task task2) {
+		String description1 = task1.getDescription();
+		String description2 = task2.getDescription();
+		
+		return description1.compareTo(description2);
+	}
+	
+	private int getPrecedence(Task task) {
+		if (task.getTaskType().equals("time task")) {
+			return PRECEDENCE_TIME_TASK;
+		} else if (task.getTaskType().equals("deadline")) {
+			return PRECEDENCE_DEADLINE;
+		} else {
+			return PRECEDENCE_FLOATING_TASK;
+		}
+		
+	}
+	
+	private boolean isEqualPrecedence(Task task1, Task task2) {
+		if (getPrecedence(task1) == getPrecedence(task2)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+}
+
+	// End of segment: E:\main\src\application\TaskComparator.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskManager.java
+	 */
+
+
+package application;
+
+import ui.TaskManagerGUI;
+
+/**
+ * Main class of TaskManager
+ * 
+	// End of segment: E:\main\src\application\TaskManager.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskManager.java
+	 */
+
+ *
+ */
+
+class TaskManager	{
+
+	public static void main (String[] args)	{	
+		TaskManagerGUI std = new TaskManagerGUI();
+		std.run();
+	}
+}
+
+
+	// End of segment: E:\main\src\application\TaskManager.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskPrinter.java
+	 */
+
+
+package application;
+
+import static java.lang.String.format;
+
+import java.util.ArrayList;
+
+/**
+ * Task Printer is used to print taskList in a table format
+ * 
+	// End of segment: E:\main\src\application\TaskPrinter.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TaskPrinter.java
+	 */
+
+ *
+ */
+public final class TaskPrinter {
+
+    
+    private static final char BORDER_TOP_LEFT = '-';
+    private static final char BORDER_TOP_RIGHT = '-';
+    private static final char BORDER_TOP_MID = '-';
+    
+    private static final char BORDER_BOTTOM_LEFT = '-';
+    private static final char BORDER_BOTTOM_RIGHT = '-';
+    private static final char BORDER_BOTTOM_MID = '-';
+
+
+    
+    private static final char HORIZONTAL_BORDER = '-';
+    private static final char VERTICAL_BORDER = '-';
+
+    private static final String DEFAULT_AS_NULL = "-";
+
+    private final String asNull = DEFAULT_AS_NULL;
+
+
+    
+    public TaskPrinter() {
+    	
+    }
+    
+    /**
+     * print time tasks and deadlines in a table format
+     * @param table - a 2-dimensional matrix storing the list of tasks
+     */
+
+    public void printTasksWithTime(ArrayList<ArrayList<String>> table) {
+        if ( table == null ) {
+            throw new IllegalArgumentException("No tabular data provided");
+        }
+        if ( table.size() == 0 || table.size() == 1 ) {
+            return;
+        }
+        int[] widths = new int[getMaxColumns(table)];
+        adjustColumnWidths(table, widths);
+        printPreparedTable(table, widths, getHorizontalBorder(widths), getTopHorizontalBorder(widths), getBotHorizontalBorder(widths));
+    }
+    
+    /**
+     * print list of floating tasks in a table format
+     * @param table - a 2-dimensional matrix storing the list of tasks
+     */
+    
+    public void printFloatingTask(ArrayList<ArrayList<String>> table) {
+        if ( table == null ) {
+            throw new IllegalArgumentException("No tabular data provided");
+        }
+        if ( table.size() == 0 || table.size() == 1 ) {
+            return;
+        }
+        int[] widths = new int[getMaxColumns(table)];
+        adjustColumnWidths(table, widths);
+        printPreparedTable(table, widths, getHorizontalBorder(widths), getTopHorizontalBorder(widths), getBotHorizontalBorder(widths));
+    }
+    
+    
+    
+    /**
+     * helper method to print taskList in a table format
+     * @param table - 2-dimensional matrix storing the list of tasks
+     * @param widths - array storing the size of each column in a row
+     * @param horizontalBorder 
+     */
+
+    private void printPreparedTable(ArrayList<ArrayList<String>> table, int widths[], String horizontalBorder, String topBorder, String botBorder) {
+        int lineLength = horizontalBorder.length();
+        System.out.println(topBorder);
+        boolean isFirstLine = true;
+        
+        for (ArrayList<String> row : table) {
+            if ( row != null ) {
+             
+                System.out.println(getRow(row, widths, lineLength));
+                if (isFirstLine) {
+                    System.out.println(horizontalBorder);
+                    isFirstLine = false;
+                }
+            }
+        }
+        System.out.println(botBorder);
+
+    }
+    
+    
+    /**
+     * get each row of the table
+     * @param row - array storing all the data in a row
+     * @param widths - array storing the size of each column in a row
+     * @param lineLength
+     * @return a nicely formatted string containing the data of each row in the table
+     */
+
+    private String getRow(ArrayList<String> row, int[] widths, int lineLength) {
+        StringBuilder builder = new StringBuilder(lineLength).append(VERTICAL_BORDER);
+        int maxWidths = widths.length;
+        for (int i = 0; i < maxWidths; i++) {
+            builder.append(padMiddle(getCellValue(row, i), widths[i])).append(VERTICAL_BORDER);
+        }
+        return builder.toString();
+    }
+    
+    /**
+     * get the horizontal border
+     * @param widths - array storing the width of each column in a row
+     * @return horizontal border
+     */
+
+    private String getHorizontalBorder(int[] widths) {
+        StringBuilder builder = new StringBuilder(256);
+        
+        
+        
+        builder.append(VERTICAL_BORDER);
+        for (int i = 0; i < widths.length; i++) {
+        	int w = widths[i];
+            for (int j = 0; j < w; j++) {
+                builder.append(HORIZONTAL_BORDER);
+            }
+            builder.append(VERTICAL_BORDER);
+        }
+        return builder.toString();
+    }
+    
+    private String getTopHorizontalBorder(int[] widths) {
+        StringBuilder builder = new StringBuilder(256);
+        
+        
+        builder.append(BORDER_TOP_LEFT);
+        for (int i = 0; i < widths.length; i++) {
+            int w = widths[i];
+            for (int j = 0; j < w; j++) {
+                builder.append(HORIZONTAL_BORDER);
+            }
+            
+            if (i == widths.length - 1) {
+                builder.append(BORDER_TOP_RIGHT);
+            } else {
+                builder.append(BORDER_TOP_MID);
+            }
+        }
+        return builder.toString();
+    }
+    
+    private String getBotHorizontalBorder(int[] widths) {
+        StringBuilder builder = new StringBuilder(256);
+        
+        builder.append(BORDER_BOTTOM_LEFT);
+        for (int i = 0; i < widths.length; i++) {
+            int w = widths[i];
+            for (int j = 0; j < w; j++) {
+                builder.append(HORIZONTAL_BORDER);
+            }
+            if (i == widths.length - 1) {
+                builder.append(BORDER_BOTTOM_RIGHT);
+            } else {
+                builder.append(BORDER_BOTTOM_MID);
+            }
+        }
+        return builder.toString();
+    }
+    
+    /**
+     * get the number of columns in the table
+     * @param rows
+     * @return the number of columns in the table
+     */
+
+    private int getMaxColumns(ArrayList<ArrayList<String>> rows) {
+        int max = 0;
+        for (ArrayList<String> row : rows ) {
+            if ( row != null && row.size() > max ) {
+                max = row.size();
+            }
+        }
+        return max;
+    }
+
+    /**
+     * adjust the size of a column by taking the maximum size of each row in the column
+     * @param rows
+     * @param widths
+     */
+    private void adjustColumnWidths(ArrayList<ArrayList<String>> rows, int[] widths) {
+        for (int i = 0; i < rows.size(); i++) {
+        	ArrayList<String> row = rows.get(i);
+            if ( row != null ) {
+                for ( int c = 0; c < widths.length; c++ ) {
+                    final String cv = getCellValue(row, c);
+                    final int l = cv.length();
+                    if ( widths[c] < l ) {
+                        widths[c] = l;
+                    }
+                }
+            }
+        }
+    }
+    
+    private static String padRight(String s, int n) {
+        return format("%1$-" + n + "s", s);
+    }
+
+    private static String padMiddle(String s, int n) {
+    	int bufferFront = n/2 - s.length()/2;
+    	int bufferEnd = n - s.length() - bufferFront;
+    	
+    	String tempString = "";
+    	
+    	for (int i = 0; i < bufferFront; i++) {
+    		tempString += " ";
+    	}
+    	
+    	tempString += s;
+    	
+    	for (int i = 0; i < bufferEnd; i++) {
+    		tempString += " ";
+    	}
+    	
+    	return tempString;
+    }
+
+    /**
+     * get the index-th cell value in a row 
+     * @param array 
+     * @param index
+     * @return
+     */
+    
+    private String getCellValue(ArrayList<String> array, int index) {
+        return array.get(index) == null ? asNull : array.get(index);
+    }
+
+}
+	// End of segment: E:\main\src\application\TaskPrinter.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TimeAnalyser.java
+	 */
+
+
+package application;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.JOptionPane;
+
+/**
+ * TimeAnalyser is used to compare time for sorting purpose and checking for clashing tasks
+ * 
+	// End of segment: E:\main\src\application\TimeAnalyser.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\application\TimeAnalyser.java
+	 */
+
+ *
+ */
+public class TimeAnalyser {
+    
+    private int year;
+    private int month;
+    private int day;
+    private int hour;
+    private int minute;
+    
+    
+    public TimeAnalyser() {}
+    private void processFormattedString(String dateTime) {
+        String processedDateTime = dateTime.replaceAll("[:/]", " ");
+
+        String[] token = processedDateTime.split("\\s+");
+   
+        day = Integer.parseInt(token[1]);
+        month = Integer.parseInt(token[2]);
+        year = Integer.parseInt(token[3]);
+        hour = Integer.parseInt(token[4]);
+        minute = Integer.parseInt(token[5]);
+        
+    }
+
+    public long getDateTimeInMilliseconds(String dateTime) {
+        processFormattedString(dateTime);
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        String formattedDateTime = formatDateTime();
+        Date date = null;
+
+        try {
+            date = sdf.parse(formattedDateTime);
+        } catch (ParseException e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+            e.printStackTrace();
+        }
+
+        long dateTimeInMilliseconds = date.getTime();
+
+        return dateTimeInMilliseconds;
+    }
+
+    public String formatDateTime() {
+        String formattedDateTime = day + "/" + month + "/" + year + " " + hour
+                + ":" + minute;
+        return formattedDateTime;
+    }
+    
+    public int compare(String dateStr1, String dateStr2) {
+        long date1InMilliseconds = getDateTimeInMilliseconds(dateStr1);
+        long date2InMilliseconds = getDateTimeInMilliseconds(dateStr2);
+        
+        if (date1InMilliseconds > date2InMilliseconds) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    
+   
+}
+
+	// End of segment: E:\main\src\application\TimeAnalyser.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Database.java
+	 */
+
+ 
+package storage;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+
+
+import application.Task;
+
+/**
+ * Database handles the writing and adding of tasks to a text file stored in the disk
+ *
+	// End of segment: E:\main\src\storage\Database.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Database.java
+	 */
+
+ *
+ */
+
+public class Database {
+	private static String databaseLocation;
+	private static String configFile = "Configuration.txt";
+	private static final ArrayList<Task> EMPTY_TASK_LIST = new ArrayList<Task>();
+	
+	
+	private static Database database;
+	
+	/**
+	 * Creates a Database 
+	 */
+	private Database() {
+		createConfigFile();
+		readConfigFile();
+		createDatabase();
+	}
+	
+	private void createConfigFile() {
+		File database = new File(configFile);
+    	if (!database.exists()) {
+            try {
+                database.createNewFile();
+                updateConfigFile("TaskManagerDatabase.txt");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+	}
+	
+	private void readConfigFile() {
+		BufferedReader reader = null;
+		
+		try{
+			reader = new BufferedReader(new FileReader(configFile));
+			databaseLocation = reader.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			closeReader(reader);
+		}
+		
+	}
+	
+	
+	/**
+	 * returns the instance of database in this Database
+	 * @return database
+	 */
+	
+	public static Database getInstance() {
+		if (database == null) {
+			database = new Database();
+		}
+		return database;
+	}
+	
+	/**
+	 * Move "TaskManagerDatabase.txt" to a location
+	 * @param newDatabaseFolder
+	 * @return true if location of "TaskManagerDatabase.txt" has been successfully changed or false if 
+	 * location of "TaskManager.txt" cannot be changed
+	 */
+
+	public boolean relocateDatabase(String newDatabaseFolder) {
+	    assert isValidDatabaseFolder(newDatabaseFolder);
+		String newDatabaseLocation = appendDatabaseName(newDatabaseFolder);
+		File database = new File(databaseLocation);
+		if (database.renameTo(new File(newDatabaseLocation))) {
+			databaseLocation = newDatabaseLocation;
+			updateConfigFile(newDatabaseLocation);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Change the database location of TaskManager. Old database is not copied to the new database location
+	 * @param newDatabaseLocation
+	 */
+	public void changeDatabaseLocation(String newDatabaseLocation) {
+	    databaseLocation = newDatabaseLocation;
+	    
+	    if (readDatabase() == null) {
+	        writeToDatabase(null);
+	    }
+	}
+
+    private boolean isValidDatabaseFolder(String newDatabaseFolder) {
+        return newDatabaseFolder != null;
+    }
+	
+	private String appendDatabaseName(String newDatabaseFolder) {
+		return newDatabaseFolder + "/TextManagerDatabase.txt";
+	}
+	
+	private boolean updateConfigFile(String newDatabaseLocation) {
+		assert newDatabaseLocation != null;
+
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(configFile));
+			writer.write(newDatabaseLocation);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		} finally {
+			try {
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Creates a new Database if database does not exist
+	 */
+	
+	private void createDatabase() {
+    	File database = new File(databaseLocation);
+    	if (!database.exists()) {
+            try {
+                database.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+	}
+	
+	/**
+	 * Reads from "TaskManagerDatabase.txt" and converts all the tasks stored in it into an ArrayList
+	 * @return taskList containing list of tasks stored in the program from previous use
+	 */
+	
+	public ArrayList<Task> readDatabase() {
+		return readDatabase(databaseLocation);
+	}
+	
+	private ArrayList<Task> readDatabase(String databaseLocation) {
+        BufferedReader reader = null;
+        ArrayList<Task> taskList = new ArrayList<Task> ();
+        
+        try{
+            reader = new BufferedReader(new FileReader(databaseLocation));
+            String currentLine;
+            while (reader.ready()) {
+                ArrayList<String> unprocessedTask = new ArrayList<String> ();
+
+                for ( int i = 0; i < 5; i++ ) {
+                    currentLine = reader.readLine();
+                    String processedLine = currentLine.substring(22).trim();
+                    unprocessedTask.add(processedLine);
+                }
+                currentLine = reader.readLine();
+
+                taskList.add(new Task(unprocessedTask));
+            }
+        } catch (IOException e) {
+            //e.printStackTrace();
+            return EMPTY_TASK_LIST;
+        } catch (IndexOutOfBoundsException iob) {
+            //e.printStackTrace();
+            return EMPTY_TASK_LIST;
+        } finally {
+            closeReader(reader);
+        }
+        
+        return taskList;
+    }
+	
+
+	
+	/** 
+	 * updates "TaskMangerDatabase.txt" with new data from taskList
+	 * @param taskList
+	 */
+	public boolean writeToDatabase(ArrayList<Task> taskList) {		
+		assert isValidTaskList(taskList);
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(databaseLocation));
+
+			for (int i = 0; i < taskList.size(); i++) {
+				Task task = taskList.get(i);
+				writer.write(task.toString());
+				writer.newLine();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		} finally {
+			try {
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static void closeReader(BufferedReader reader) {
+		if (reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private boolean isValidTaskList(ArrayList<Task> taskList) {
+		return (taskList != null);
+	}
+	
+	
+}
+
+	// End of segment: E:\main\src\storage\Database.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\DatabaseLocationChanger.java
+	 */
+
+
+package storage;
+
+/**
+ * DatabaseLocationChanger is used to change the location of a database. It acts as a facade between
+ * LogicController and Database
+ * 
+	// End of segment: E:\main\src\storage\DatabaseLocationChanger.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\DatabaseLocationChanger.java
+	 */
+
+ *
+ */
+public class DatabaseLocationChanger {
+	private static Database database;
+	
+	public DatabaseLocationChanger() {
+		database = Database.getInstance();
+	}
+	
+	public boolean setDatabaseLocation(String newDatabaseFolder) {
+		return database.relocateDatabase(newDatabaseFolder);
+	}
+	
+}
+
+	// End of segment: E:\main\src\storage\DatabaseLocationChanger.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\DatabaseTest.java
+	 */
+
+
+package storage;
+
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import org.junit.Test;
+import application.Task;
+import application.TaskComparator;
+
+/**
+ * Unit Testing for Database
+ * 
+	// End of segment: E:\main\src\storage\DatabaseTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\DatabaseTest.java
+	 */
+
+ *
+ */
+
+public class DatabaseTest {
+    private static final String PATH_EMPTY_STRING = "";
+    private static final String PATH_INVALID_LOCATION = "InvalidLocation";
+    private static final String PATH_VALID_LOCATION = "TestSuite/SetLocationTest";
+    
+    private static final ArrayList<Task> EMPTY_TASK_LIST = new ArrayList<Task>();
+
+    
+	@Test
+	public void test() {
+		Database database = Database.getInstance();
+		
+		/*
+		 * Testing for setDatabaseLocation() method using Equivalence Partition
+		 * The partition are empty string, valid location and invalid location
+		 */
+		assertEquals(database.relocateDatabase(PATH_EMPTY_STRING), false);
+	    assertEquals(database.relocateDatabase(PATH_INVALID_LOCATION), false);
+		assertEquals(database.relocateDatabase(PATH_VALID_LOCATION), true);
+		
+		 /*
+		 * Testing for readDatabase() method using Equivalence Partition
+		 * The partition are a valid database file, an corrupted database file, and an empty database file
+		 */
+		Task task1 = new Task("deadline", "task 1", "- -", "Sat 28/03/2015 21:00", "undone");
+		Task task2 = new Task("floating task", "task 2", "- -", "- -", "done");
+		Task task3 = new Task("time task", "task 3", "Sun 01/02/2015 01:00", "Mon 02/02/2015 02:00", "undone");
+		ArrayList<Task> testTaskList = new ArrayList<Task>();
+		testTaskList.add(task1);
+	    testTaskList.add(task2);
+	    testTaskList.add(task3);
+	    Collections.sort(testTaskList, new TaskComparator());
+	    
+		database.changeDatabaseLocation("TestSuite/DatabaseTest/TestRead.txt");
+	    assertEquals(database.readDatabase().toString(), testTaskList.toString());
+	
+		database.changeDatabaseLocation("TestSuite/DatabaseTest/TestReadCorrupted.txt");
+		assertEquals(database.readDatabase(), EMPTY_TASK_LIST);
+		
+		database.changeDatabaseLocation("TestSuite/DatabaseTest/TestReadEmpty.txt");
+		assertEquals(database.readDatabase(), EMPTY_TASK_LIST);
+
+		/*
+		 * Testing for writeToDatabase() method
+		 */
+		database.changeDatabaseLocation("TestSuite/DatabaseTest/TestWrite.txt");
+		database.writeToDatabase(testTaskList);
+		assertEquals(database.readDatabase().toString(), testTaskList.toString());
+
+
+	
+
+
+
+	}
+
+}
+
+	// End of segment: E:\main\src\storage\DatabaseTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+
+package storage;
+
+import application.Task;
+import application.TaskComparator;
+import application.TimeAnalyser;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+
+/**
+ * Memory acts as a facade between LogicController and Database.
+ * LogicController makes changes to the taskList stored in Memory.
+ * Memory writes these changes to the Database.
+ * 
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+ *
+ */
+public class Memory {
+
+    private static final String DONE = "done";
+    private static final String UNDONE = "undone";
+    private static final int FEEDBACK_CLASHING_TASK = 3;
+    private static final int FEEDBACK_NON_CLASHING_TASK = 1;
+
+    private ArrayList<Task> taskList = new ArrayList<Task>();
+
+    private static Memory memory;
+
+    private static final Logger memoryLogger = Logger.getLogger(Memory.class.getName());
+
+    private Memory() {
+        Database database = Database.getInstance();
+        initMemory(database);
+    }
+
+    public static Memory getInstance() {
+        if (memory == null) {
+            memory = new Memory();
+        }
+        return memory;
+    }
+
+    /**
+     * insert a new task to the list, returns true if successfully
+     * added
+     * 
+     * @param newTask - new task created
+     * @return 
+     */
+    public int addTask(Task newTask) {
+        memoryLogger.entering(getClass().getName(), "adding a new task to taskList");
+        assert isValidTask(newTask);
+
+        int feedback = FEEDBACK_NON_CLASHING_TASK;
+
+        if (isTimeTask(newTask)) { 
+            if (hasExactSameTimeIntervalAsOtherTask(newTask)) {
+                memoryLogger.log(Level.FINE, "Clashing Task");
+                feedback = FEEDBACK_CLASHING_TASK;
+            }
+
+            if (hasOtherTasksWithinIntervalOfAddedTask(newTask)) {
+                memoryLogger.log(Level.FINE, "Clashing Task");
+                feedback = FEEDBACK_CLASHING_TASK;
+            }
+
+            if (isOverlappingWithOtherTasks(newTask)) {
+                memoryLogger.log(Level.FINE, "Clashing Task");
+                feedback = FEEDBACK_CLASHING_TASK;
+            }
+        }
+
+        if (taskList.add(newTask)) {
+            memoryLogger.log(Level.FINE, "add success");
+        } else {
+            memoryLogger.log(Level.SEVERE, "Error adding new task!");
+            throw new Error("Fatal error! Unable to add Task");
+        }
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.exiting(getClass().getName(), "adding a new task to taskList");
+
+        return feedback;
+    }
+
+    private boolean isTimeTask(Task task) {
+        String taskType = task.getTaskType();
+        return taskType.equals("time task");
+    }
+
+    private boolean isOverlappingWithOtherTasks(Task task) {
+        ArrayList<Task> timeTasks = getTimeTasks();
+        TimeAnalyser ta = new TimeAnalyser();
+
+        String startTime = task.getStartDateTime();
+        long startTimeInMillis = ta.getDateTimeInMilliseconds(startTime);
+
+        String endTime = task.getEndDateTime();
+        long endTimeInMillis = ta.getDateTimeInMilliseconds(endTime);
+
+
+        for (int i = 0; i < timeTasks.size(); i++) {
+            Task currentTask = timeTasks.get(i);
+            String startTime2 = currentTask.getStartDateTime();
+            long startTime2InMillis = ta.getDateTimeInMilliseconds(startTime2);
+
+            String endTime2 = currentTask.getEndDateTime();
+            long endTime2InMillis = ta.getDateTimeInMilliseconds(endTime2);
+
+
+            if (endTime2InMillis > endTimeInMillis && startTime2InMillis < endTimeInMillis ||
+                    startTime2InMillis < startTimeInMillis && endTime2InMillis > startTimeInMillis) {
+                return true;
+            } 
+        }
+
+        return false;
+
+    }
+
+    private boolean isEntirelyWithinIntervalOfOtherTasks(Task task) {
+        ArrayList<Task> timeTasks = getTimeTasks();
+        TimeAnalyser ta = new TimeAnalyser();
+
+        String startTime = task.getStartDateTime();
+        long startTimeInMillis = ta.getDateTimeInMilliseconds(startTime);
+
+        String endTime = task.getEndDateTime();
+        long endTimeInMillis = ta.getDateTimeInMilliseconds(endTime);
+
+
+        for (int i = 0; i < timeTasks.size(); i++) {
+            Task currentTask = timeTasks.get(i);
+            String startTime2 = currentTask.getStartDateTime();
+            long startTime2InMillis = ta.getDateTimeInMilliseconds(startTime2);
+
+            String endTime2 = currentTask.getEndDateTime();
+            long endTime2InMillis = ta.getDateTimeInMilliseconds(endTime2);
+
+
+            if (endTime2InMillis > endTimeInMillis && startTime2InMillis < endTimeInMillis &&
+                    startTime2InMillis < startTimeInMillis && endTime2InMillis > startTimeInMillis) {
+                return true;
+            } 
+        }
+
+        return false;
+    }
+
+    private boolean hasOtherTasksWithinIntervalOfAddedTask(Task task) {
+        ArrayList<Task> timeTasks = getTimeTasks();
+
+        TimeAnalyser ta = new TimeAnalyser();
+
+        String startTime = task.getStartDateTime();
+        long startTimeInMillis = ta.getDateTimeInMilliseconds(startTime);
+
+        String endTime = task.getEndDateTime();
+        long endTimeInMillis = ta.getDateTimeInMilliseconds(endTime);
+
+
+        for (int i = 0; i < timeTasks.size(); i++) {
+            Task currentTask = timeTasks.get(i);
+            String startTime2 = currentTask.getStartDateTime();
+            long startTime2InMillis = ta.getDateTimeInMilliseconds(startTime2);
+
+            String endTime2 = currentTask.getEndDateTime();
+            long endTime2InMillis = ta.getDateTimeInMilliseconds(endTime2);
+
+            if (endTime2InMillis < endTimeInMillis && endTime2InMillis > startTimeInMillis &&
+                    startTime2InMillis > startTimeInMillis && startTime2InMillis < endTimeInMillis) {
+                return true;
+            } 
+        }
+
+        return false;
+    }
+
+    private boolean hasExactSameTimeIntervalAsOtherTask(Task task) {
+        ArrayList<Task> timeTasks = getTimeTasks();
+
+        String startTime = task.getStartDateTime();
+        String endTime = task.getEndDateTime();
+
+        for (int i = 0; i < timeTasks.size(); i++) {
+            Task currentTask = timeTasks.get(i);
+            String startTime2 = currentTask.getStartDateTime();
+            String endTime2 = currentTask.getEndDateTime();
+
+            if (startTime.equals(startTime2) && endTime.equals(endTime2)) {
+                return true;
+            } 
+        }
+
+        return false;
+    }
+
+    private void writeToDatabase() {
+        memoryLogger.entering(getClass().getName(), "writing new task to database");
+        Database database = Database.getInstance();
+        if (database.writeToDatabase(taskList)) {
+            memoryLogger.log(Level.FINE, "write success");
+        } else {
+            memoryLogger.log(Level.SEVERE, "error writing task to database");
+        }
+        memoryLogger.exiting(getClass().getName(), "writing new task to database");
+    }
+
+
+    public Task removeTask(Task removedTask) {
+        memoryLogger.entering(getClass().getName(), "removing a task from database");
+        assert isValidTask(removedTask);
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            if (currentTask == removedTask) {
+                if (taskList.remove(i) != null) {
+                    memoryLogger.log(Level.FINE, "remove success");
+                } else {
+                    memoryLogger.log(Level.SEVERE, "task cannot be found in taskList");
+                }
+            }
+        }
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.exiting(getClass().getName(), "removing a task from database");
+        return removedTask;
+    }
+
+    public ArrayList<Task> removeAll() {
+        memoryLogger.entering(getClass().getName(), "removing all tasks from taskList");
+        ArrayList<Task> deletedTaskList = taskList;
+        taskList = new ArrayList<Task>();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "remove success");
+        memoryLogger.exiting(getClass().getName(), "removing all tasks from taskList");
+
+        return deletedTaskList;
+    }
+
+    /**
+     * search the list by a keyword
+     * 
+     * @param keyword
+     * @return result arraylist containing the tasks that contains the keyword
+     */ 
+    public ArrayList<Task> searchDescription(String keyword) {
+        memoryLogger.entering(getClass().getName(), "searching task containing keyword");
+        assert isValidKeyword(keyword);
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        for (int i = 0; i < taskList.size(); i++) {
+            Task task = taskList.get(i);
+            if (task.getDescription().toLowerCase().contains(keyword.toLowerCase())) {
+                searchList.add(task);
+            }
+        }
+        memoryLogger.log(Level.FINE, "search success");
+        memoryLogger.exiting(getClass().getName(), "searching task containing keyword");
+
+        return searchList;
+    }
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\Memory.java
+	 */
+
+    public ArrayList<Task> searchStatus(String status) {
+        memoryLogger.entering(getClass().getName(), "searching task of the specified status");
+        assert isValidStatus(status);
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        for (int i = 0; i < taskList.size(); i++) {
+            Task task = taskList.get(i);
+            if (task.getStatus().equals(status)) {
+                searchList.add(task);
+            }
+        }
+        memoryLogger.log(Level.FINE, "search success");
+        memoryLogger.entering(getClass().getName(), "searching task of the specified status");
+        return searchList;
+    }
+
+    public void editTime(int index, String newStartDateTime, String newEndDateTime) {
+        memoryLogger.entering(getClass().getName(), "editing time");
+        assert isValidIndex(index);
+        Task task = taskList.get(index - 1);
+        task.setStartDateTime(newStartDateTime);
+        task.setEndDateTime(newEndDateTime);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "edit success");
+        memoryLogger.exiting(getClass().getName(), "editing time");
+
+    }
+
+    public void editDescription(int index, String newDescription) {
+        memoryLogger.entering(getClass().getName(), "editing description");
+        assert isValidIndex(index);
+        Task task = taskList.get(index - 1);
+        task.setDescription(newDescription);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "edit success");
+        memoryLogger.exiting(getClass().getName(), "editing description");
+
+    }
+
+    private void sortTaskList() {
+        Collections.sort(taskList, new TaskComparator());
+
+    }
+
+    public void markDone(int index) {
+        memoryLogger.entering(getClass().getName(), "marking task");
+        assert isValidIndex(index);
+        Task task = taskList.get(index - 1);
+        task.setStatus(DONE);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "mark success");
+        memoryLogger.exiting(getClass().getName(), "marking task");
+    }
+
+    public void markDone(Task doneTask) {
+        memoryLogger.entering(getClass().getName(), "marking task");
+        Task task = taskList.get(taskList.indexOf(doneTask));
+        task.setStatus(DONE);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "mark success");
+        memoryLogger.exiting(getClass().getName(), "marking task");
+    }
+
+    public void markUndone(Task undoneTask) {
+        memoryLogger.entering(getClass().getName(), "marking task");
+        Task task = taskList.get(taskList.indexOf(undoneTask));
+        task.setStatus(UNDONE);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "mark success");
+        memoryLogger.exiting(getClass().getName(), "marking task");
+    }
+
+    public void editTaskType(int index, String newTaskType) {
+        memoryLogger.entering(getClass().getName(), "editing taskType");
+        assert isValidIndex(index);
+        Task task = taskList.get(index - 1);
+        task.setTaskType(newTaskType);
+        sortTaskList();
+        writeToDatabase();
+        memoryLogger.log(Level.FINE, "edit success");
+        memoryLogger.exiting(getClass().getName(), "marking task");
+
+    }
+
+    private void initMemory(Database database) {
+        memoryLogger.entering(getClass().getName(), "initializing memory");
+        taskList = database.readDatabase();
+        memoryLogger.log(Level.FINE, "successfully initializing memory");
+        memoryLogger.exiting(getClass().getName(), "initializing memory");
+
+    }
+
+
+    public ArrayList<Task> getTaskList() {
+        return taskList;
+    }
+
+    public void display() {
+        for (int i = 0; i < taskList.size(); i++) {
+            System.out.print(taskList.get(i));
+            System.out.println();
+        }
+    }
+
+    public boolean contains(Task task) {
+        return taskList.contains(task);
+    }
+
+    public boolean isValidTask(Task newData) {
+        return newData != null;
+    }
+
+    public boolean isValidKeyword(String keyword) {
+        return keyword != null;
+    }
+
+    public boolean isValidStatus(String status) {
+        return status != null;
+    }
+
+    public boolean isValidIndex(int index) {
+        return (index > 0 && index <= taskList.size());
+    }
+
+    public ArrayList<Task> getDeadlinesAndTimeTasks() {
+        ArrayList<Task> deadlinesAndTimeTasks = new ArrayList<Task> ();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            String taskType = currentTask.getTaskType();
+
+            if (taskType.equals("deadline") || taskType.equals("time task") ) {
+                deadlinesAndTimeTasks.add(currentTask);
+            }
+        }
+
+        return deadlinesAndTimeTasks;
+    }
+
+    public ArrayList<Task> getFloatingTasks() {
+        ArrayList<Task> floatingTasks = new ArrayList<Task> ();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            String taskType = currentTask.getTaskType();
+
+            if (taskType.equals("floating task")) {
+                floatingTasks.add(currentTask);
+            }
+        }
+
+        return floatingTasks;
+    }
+
+    public ArrayList<Task> getTimeTasks() {
+        ArrayList<Task> timeTasks = new ArrayList<Task> ();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            String taskType = currentTask.getTaskType();
+
+            if (taskType.equals("time task")) {
+                timeTasks.add(currentTask);
+            }
+        }
+
+        return timeTasks;
+    }
+
+    public ArrayList<Task> getDone() {
+        ArrayList<Task> doneTasks = new ArrayList<Task> ();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            String status = currentTask.getStatus();
+
+            if (status.equals("done")) {
+                doneTasks.add(currentTask);
+            }
+        }
+
+        return doneTasks;
+    }
+
+    public ArrayList<Task> getUndone() {
+        ArrayList<Task> undoneTasks = new ArrayList<Task> ();
+
+        for (int i = 0; i < taskList.size(); i++) {
+            Task currentTask = taskList.get(i);
+            String status = currentTask.getStatus();
+
+            if (status.equals("undone")) {
+                undoneTasks.add(currentTask);
+            }
+        }
+
+        return undoneTasks;
+    }
+
+    public ArrayList<Task> getBetween(String date1, String date2) {
+        ArrayList<Task> searchList = new ArrayList<Task>();
+        TimeAnalyser ta = new TimeAnalyser();
+
+        ArrayList<Task> deadlinesAndTimeTasks = getDeadlinesAndTimeTasks();
+
+        for (int i = 0; i < deadlinesAndTimeTasks.size(); i++) {
+            Task currentTask = deadlinesAndTimeTasks.get(i);
+            String date;
+
+            if (isDeadline(currentTask)) {
+                date = currentTask.getEndDateTime();
+            } else {
+                date = currentTask.getStartDate();
+            }
+
+            if (ta.compare(date1, date) == 1 && ta.compare(date, date2) == 1) {
+                searchList.add(currentTask);
+            }
+        }
+
+        return searchList;
+    }
+
+    private boolean isDeadline(Task task) {
+        String status = task.getStatus();
+
+        if (status.equals("deadline")) {
+            return true;
+        }
+
+        return false;
+    }
+
+}
+
+	// End of segment: E:\main\src\storage\Memory.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\MemoryTest.java
+	 */
+
+
+package storage;
+
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+import org.junit.Test;
+
+import application.Task;
+import application.TaskComparator;
+
+/**
+ * Unit testing for Memory
+ * 
+	// End of segment: E:\main\src\storage\MemoryTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\storage\MemoryTest.java
+	 */
+
+ *
+ */
+
+public class MemoryTest {
+	final int FEEDBACK_CLASHING_TASK = 3;
+	final int FEEDBACK_NON_CLASHING_TASK = 1;
+	
+	Memory memory = Memory.getInstance();
+
+	@Test
+	public void test() {
+		
+		/*
+		 * Test for remove all
+		 */
+		memory.removeAll();
+		assertEquals(memory.getTaskList().size(), 0);
+
+		/*
+		 * Test for adding task
+		 */
+		Task task1 = new Task("deadline", "task 1", "- -", "Sat 28/03/2015 21:00", "undone");
+		memory.addTask(task1);
+		assertEquals(memory.contains(task1), true);
+		
+		Task task2 = new Task("floating task", "task 2", "- -", "- -", "done");
+		memory.addTask(task2);
+		assertEquals(memory.contains(task2), true);
+
+		Task task3 = new Task("time task", "task 3", "Sun 01/02/2015 01:00", "Mon 02/02/2015 02:00", "undone");
+		memory.addTask(task3);
+		assertEquals(memory.contains(task3), true);
+		
+		Task task4 = new Task("floating task", "dummy", "-", "-", "undone");
+		memory.addTask(task4);
+		assertEquals(memory.contains(task4), true);
+
+		/*
+		 * Test for remove
+		 */
+		Task removedTask = memory.removeTask(task2);
+		assertEquals(removedTask, task2);
+
+		/*
+		 * Test for search description
+		 */
+		ArrayList<Task> searchList = memory.searchDescription("task");
+		ArrayList<Task> correctSearchList = new ArrayList<Task>();
+		correctSearchList.add(task3);
+		correctSearchList.add(task1);
+		Collections.sort(correctSearchList, new TaskComparator());
+		assertEquals(correctSearchList, searchList);
+
+		/*
+		 * Test for mark
+		 */
+		memory.markDone(1);
+		assertEquals(memory.getTaskList().get(0).getStatus(), "done");
+		
+		/*
+		 * Test for search status
+		 */
+		searchList = memory.searchStatus("undone");
+		correctSearchList = new ArrayList<Task>();
+		correctSearchList.add(task1);
+		correctSearchList.add(task4);
+		Collections.sort(correctSearchList, new TaskComparator());
+		assertEquals(correctSearchList, searchList);
+				
+		/*
+		 * Test for addTask() method using Equivalence Partition
+		 * The partition are overlapping tasks, non-overlapping tasks, tasks contained within the interval of other tasks,
+		 * tasks with interval enclosing the interval of other tasks, tasks with exactly the same time interval as other
+		 * tasks
+		 * 
+		 */
+		int feedback;
+		
+		//Testing for overlapping tasks
+		resetMemory();
+		Task clashingTask1 = new Task("time task", "clashingTask1", "Sat 28/03/2015 19:59", "Sat 28/03/2015 20:01", "undone");
+		feedback = memory.addTask(clashingTask1);
+		assertEquals(feedback, FEEDBACK_CLASHING_TASK);
+		
+		resetMemory();
+		Task clashingTask2 = new Task("time task", "clashingTask2", "Sat 28/03/2015 20:59", "Sat 28/03/2015 21:01", "undone");
+		feedback = memory.addTask(clashingTask2);
+		assertEquals(feedback, FEEDBACK_CLASHING_TASK);
+		
+		//Testing for non-overlapping tasks
+		resetMemory();
+		Task nonOverlappingTask1 = new Task("time task", "nonOverlappingTask1", "Sat 28/03/2015 21:00", "Sat 28/03/2015 22:00", "undone");
+		feedback = memory.addTask(nonOverlappingTask1);
+		assertEquals(feedback, FEEDBACK_NON_CLASHING_TASK);
+		
+		resetMemory();
+		Task nonOverlappingTask2 = new Task("time task", "nonOverlappingTask2", "Sat 28/03/2015 19:00", "Sat 28/03/2015 20:00", "undone");
+		feedback = memory.addTask(nonOverlappingTask2);
+		assertEquals(feedback, FEEDBACK_NON_CLASHING_TASK);
+		
+		//Testing for adding tasks with interval contained within the interval of existing tasks
+		resetMemory();
+		clashingTask1 = new Task("time task", "clashingTask1", "Sat 28/03/2015 20:01", "Sat 28/03/2015 20:59", "undone");
+		feedback = memory.addTask(clashingTask1);
+		assertEquals(feedback, FEEDBACK_CLASHING_TASK);
+				
+		//Testing for adding tasks with exactly the same time interval as existing task
+		resetMemory();
+		clashingTask1 = new Task("time task", "clashingTask1", "Sat 28/03/2015 20:00", "Sat 28/03/2015 21:00", "undone");
+		feedback = memory.addTask(clashingTask1);
+		assertEquals(feedback, FEEDBACK_CLASHING_TASK);
+		
+		//Testing for adding tasks with interval enclosing the interval of existing tasks
+		resetMemory();
+		clashingTask1 = new Task("time task", "clashingTask1", "Sat 28/03/2015 19:00", "Sat 28/03/2015 22:00", "undone");
+		feedback = memory.addTask(clashingTask1);
+		assertEquals(feedback, FEEDBACK_CLASHING_TASK);
+	}
+	
+	public void resetMemory() {
+		memory.removeAll();
+		Task task = new Task("time task", "task", "Sat 28/03/2015 20:00", "Sat 28/03/2015 21:00", "undone");
+		memory.addTask(task);
+	}
+}
+
+	// End of segment: E:\main\src\storage\MemoryTest.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\Clock.java
+	 */
+
+
+package ui;
+
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Date;
+
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
+
+/**
+ * Clock class is used to create a clock for Task Manager's GUI
+ * 
+	// End of segment: E:\main\src\ui\Clock.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\Clock.java
+	 */
+
+ *
+ */
+
+class Clock extends JLabel implements ActionListener {
+
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 1971896250789963175L;
+	
+	private static final Font FONT_IOWAN_OLD_STYLE = new Font("Iowan Old Style", Font.PLAIN, 12);
+
+	public Clock() {
+		super("" + new Date());
+		setHorizontalAlignment(SwingConstants.RIGHT);
+		setFont(FONT_IOWAN_OLD_STYLE);
+		Timer t = new Timer(0, this);
+		t.start();
+	}
+
+	public void actionPerformed(ActionEvent ae) {
+		setText((new Date()).toString().substring(0, 10) + (new Date()).toString().substring(23) + " " + (new Date()).toString().substring(11, 20));
+	}
+}
+
+	// End of segment: E:\main\src\ui\Clock.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\CommandLineInterface.java
+	 */
+
+
+package ui;
+
+import logic.LogicController;
+
+/**
+ * CommandLineInterface is used to create a Command Line Interface for TaskManager
+ * 
+	// End of segment: E:\main\src\ui\CommandLineInterface.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\CommandLineInterface.java
+	 */
+
+ *
+ */
+
+public class CommandLineInterface {
+
+	public CommandLineInterface(){
+	} 	
+
+	/**
+	 * Scan user input and execute the command.
+	 */
+	public String processUserInput(String userInput){
+		String message;
+		LogicController commandHandler = LogicController.getInstance();
+	    message = commandHandler.executeCommand(userInput);
+		return message;
+	}
+
+	/**
+	 * Print all of the message to the user
+	 * @param message
+	 */
+	
+	public static void printMessageToUser(String message){
+        System.out.println(message);
+    }	
+}
+
+	// End of segment: E:\main\src\ui\CommandLineInterface.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\DeadlinesAndTimeTasksTable.java
+	 */
+
+
+package ui;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+
+import javax.swing.AbstractAction;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+
+import application.Task;
+import logic.LogicController;
+
+/**
+ * DeadlinesAndTimeTasksTable is used to create a table that stores deadlines and time tasks.
+ * 
+	// End of segment: E:\main\src\ui\DeadlinesAndTimeTasksTable.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\DeadlinesAndTimeTasksTable.java
+	 */
+
+ *
+ */
+public class DeadlinesAndTimeTasksTable extends JPanel {
+	
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 7618108371680630851L;
+	
+	private static final String NAME_LABEL = "Deadlines and Time Tasks";
+	private static final String[] NAMES_COLUMN = {"No.", "Description", "Start Time", "End Time", "Status"};
+	
+	private static final Font FONT_ARIAL = new Font("Arial", Font.PLAIN, 12);
+	
+	private static final String KEY_EVENT_SCROLL_UP = "scroll up";
+	private static final String KEY_EVENT_SCROLL_DOWN = "scroll up";
+
+	private static final int ROWS = 11;
+	private static final int COLUMN_SIZE = 5;
+
+	
+	private static JLabel label;
+	private static JTable table; 
+	private static DefaultTableModel model = new DefaultTableModel(NAMES_COLUMN, 0)
+	{
+		/**
+		 * generated
+		 */
+		private static final long serialVersionUID = 55623221195634318L;
+
+		//This causes all cells to be not editable
+		public boolean isCellEditable(int row, int column)
+		{
+			return false;
+		}
+	};
+	private static JScrollPane scrollPane;
+	
+	private static DeadlinesAndTimeTasksTable deadlinesAndTimeTasksTable;
+	private static LogicController logicController;
+
+	private DeadlinesAndTimeTasksTable() {
+		super(new BorderLayout());
+		
+		logicController = LogicController.getInstance();
+
+		initializeTableLabel();
+		add(label, BorderLayout.NORTH);
+		table = new JTable(model);
+		scrollPane = new JScrollPane(table);
+		add(scrollPane, BorderLayout.CENTER);
+
+		initializeTable();
+		setUpColumnWidth();
+	}
+	
+	private void initializeTableLabel() {
+		label = new JLabel(NAME_LABEL, SwingConstants.CENTER);
+        label.setFont(FONT_ARIAL);
+	}
+
+	private void initializeTable() {
+		table.setShowGrid(false);
+		setFontAndColor();
+		setSelectionOption();
+		setSize();
+		addKeyboardCommand();
+		setUpColumnWidth();
+	}
+	
+	private void setSize() {
+		table.setPreferredScrollableViewportSize(new Dimension(680, 160));
+		table.setFillsViewportHeight(true);
+	}
+
+	private void setFontAndColor() {
+		table.setFont(new Font("Arial", Font.PLAIN, 12));
+		table.getTableHeader().setFont(new Font("Arial", Font.PLAIN, 13));
+		table.setForeground(Color.BLUE);
+	}
+
+	private void setSelectionOption() {
+		table.setRowSelectionAllowed(true);
+		table.setColumnSelectionAllowed(false);
+		table.setCellSelectionEnabled(false);
+	}
+
+	private void addKeyboardCommand() {
+		addScrollUpCommand();
+		addScrollDownCommand();
+	}
+	
+	private void addScrollUpCommand() {
+		table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, 0), KEY_EVENT_SCROLL_DOWN);
+		table.getActionMap().put(KEY_EVENT_SCROLL_DOWN, new AbstractAction() {        
+			/**
+			 * generated 
+			 */
+			private static final long serialVersionUID = 2464218770554059695L;
+
+			public void actionPerformed(ActionEvent ae) {
+				int height = table.getRowHeight() * (ROWS - 1);
+				JScrollBar bar = scrollPane.getVerticalScrollBar();
+				bar.setValue(bar.getValue() + height);
+			}
+		});
+	}
+	
+	private void addScrollDownCommand() {
+		table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, 0), KEY_EVENT_SCROLL_UP);
+		table.getActionMap().put(KEY_EVENT_SCROLL_UP, new AbstractAction() {     
+			/**
+			 * generated
+			 */
+			private static final long serialVersionUID = -1827429458697486133L;
+
+			public void actionPerformed(ActionEvent ae) {
+				int height = table.getRowHeight() * (ROWS - 1);
+				JScrollBar bar = scrollPane.getVerticalScrollBar();
+				bar.setValue(bar.getValue() - height);
+			}
+		});
+	}
+	
+	public int updateTable() {
+		model.setRowCount(0);
+
+		ArrayList<Task> deadlinesAndTimeTasks = getDeadlinesAndTimeTasks(logicController.getTaskList());
+
+		Object[][] data = new Object[deadlinesAndTimeTasks.size()][COLUMN_SIZE];
+
+		int taskNumber = 1;
+
+		for (int i = 0; i < deadlinesAndTimeTasks.size(); i++) {
+			data[i][0] = taskNumber;
+			taskNumber += 1;
+			data[i][1] = deadlinesAndTimeTasks.get(i).getDescription();      
+			data[i][2] = deadlinesAndTimeTasks.get(i).getStartDateTime();
+			data[i][3] = deadlinesAndTimeTasks.get(i).getEndDateTime();
+			data[i][4] = deadlinesAndTimeTasks.get(i).getStatus();
+			model.addRow(data[i]);
+		}
+		
+		return taskNumber;
+	}
+
+	private ArrayList<Task> getDeadlinesAndTimeTasks(ArrayList<Task> taskList) {
+		ArrayList<Task> deadlinesAndTimeTasks = new ArrayList<Task> ();
+
+		for (int i = 0; i < taskList.size(); i++) {
+			Task currentTask = taskList.get(i);
+
+			if (isDeadline(currentTask) || isTimeTask(currentTask)) {
+				deadlinesAndTimeTasks.add(currentTask);
+			}
+		}
+
+		return deadlinesAndTimeTasks;
+	}
+
+	private void setUpColumnWidth() {
+		final int colNo = table.getColumnCount();
+
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+		Runnable runColWidthSetup = setAllColumns(colNo);
+		SwingUtilities.invokeLater(runColWidthSetup);
+	}
+
+	private Runnable setAllColumns(final int colNo) {
+		Runnable runColWidthSetup = new Runnable(){
+			@Override
+			public void run(){
+				for (int i = 0; i < colNo; i++) {
+					TableColumn column = table.getColumnModel().getColumn(i);
+
+					boolean isID = i == 0;
+					boolean isDesc = i == 1;
+					boolean isStartTime = i == 2;
+					boolean isEndTime = i == 3;
+					boolean isStatus = i == 4;
+
+					if (isID) {
+						column.setCellRenderer(new DeadlinesAndTimeTasksTableRenderer());
+						column.setPreferredWidth(40);
+					} else if (isDesc) {
+						column.setCellRenderer(new DeadlinesAndTimeTasksTableRenderer());
+						column.setPreferredWidth(360);
+					} else if (isStartTime) {
+						column.setCellRenderer(new DeadlinesAndTimeTasksTableRenderer());
+						column.setPreferredWidth(140);
+					} else if (isEndTime) {
+						column.setCellRenderer(new DeadlinesAndTimeTasksTableRenderer());
+						column.setPreferredWidth(140);
+					} else if (isStatus) {
+						column.setCellRenderer(new DeadlinesAndTimeTasksTableRenderer());
+						column.setPreferredWidth(50);
+					}
+				}
+
+
+			}
+		};
+		return runColWidthSetup;
+	}
+	
+	public static DeadlinesAndTimeTasksTable getInstance() {
+		if (deadlinesAndTimeTasksTable == null) {
+			deadlinesAndTimeTasksTable = new DeadlinesAndTimeTasksTable();
+		}
+		return deadlinesAndTimeTasksTable;
+	}
+	
+	private boolean isDeadline(Task task) {
+		String taskType = task.getTaskType(); 
+		return taskType.equals("deadline");
+
+	}
+	
+	private boolean isTimeTask(Task task) {
+		String taskType = task.getTaskType(); 
+		return taskType.equals("time task");
+	}
+}
+
+	// End of segment: E:\main\src\ui\DeadlinesAndTimeTasksTable.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\DeadlinesAndTimeTasksTableRenderer.java
+	 */
+
+
+package ui;
+
+import javax.swing.JTable; 
+import javax.swing.JTextArea; 
+import javax.swing.table.DefaultTableCellRenderer; 
+import javax.swing.table.TableCellRenderer; 
+import javax.swing.table.TableColumn; 
+import javax.swing.table.TableColumnModel; 
+
+import application.TimeAnalyser;
+
+import java.awt.Color;
+import java.awt.Component; 
+import java.awt.Font;
+import java.util.Enumeration; 
+import java.util.HashMap; 
+import java.util.Map; 
+ 
+/**
+ * This class is used to render individual cells in a JTable. 
+ * 
+	// End of segment: E:\main\src\ui\DeadlinesAndTimeTasksTableRenderer.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\DeadlinesAndTimeTasksTableRenderer.java
+	 */
+
+ *
+ */
+ 
+public class DeadlinesAndTimeTasksTableRenderer extends JTextArea implements TableCellRenderer { 
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = -8147092230404572764L;
+
+	private static final Color COLOR_BLUE = Color.BLUE;
+	private static final Color COLOR_RED = Color.RED;
+	private static final Color COLOR_LIGHT_BLUE = new Color(170, 204, 255);
+    private static final Color COLOR_LIGHT_PINK = new Color(255, 204, 255);
+
+
+	private static final Font FONT_ARIAL = new Font("Arial", Font.BOLD, 12);
+	private final DefaultTableCellRenderer renderer = new DefaultTableCellRenderer(); 
+ 
+    // Column heights are placed in this Map 
+    private final Map<JTable, Map<Object, Map<Object, Integer>>> tablecellSizes = new HashMap<JTable, Map<Object, Map<Object, Integer>>>(); 
+ 
+    /** 
+     * Creates a text area renderer. 
+     */ 
+    public DeadlinesAndTimeTasksTableRenderer() { 
+        setLineWrap(true); 
+        setWrapStyleWord(true); 
+    } 
+ 
+    /** 
+     * Returns the component used for drawing the cell.  This method is 
+     * used to configure the renderer appropriately before drawing. 
+     * 
+     * @param table      - JTable object 
+     * @param value      - the value of the cell to be rendered. 
+     * @param isSelected - isSelected   true if the cell is to be rendered with the selection highlighted; 
+     *                     otherwise false. 
+     * @param hasFocus   - if true, render cell appropriately. 
+     * @param row        - The row index of the cell being drawn. 
+     * @param column     - The column index of the cell being drawn. 
+     * @return - Returns the component used for drawing the cell. 
+     */ 
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
+                                                   boolean hasFocus, int row, int column) { 
+        // set the Font, Color, etc. 
+        renderer.getTableCellRendererComponent(table, value, 
+                isSelected, hasFocus, row, column); 
+        
+        setBackground(renderer.getBackground()); 
+        setBorder(renderer.getBorder()); 
+        setFont(FONT_ARIAL);
+        setText(renderer.getText()); 
+        
+        String dateTime = (String) table.getValueAt(row, 2);
+        
+        if (isDeadline(dateTime)) {
+        	dateTime = (String) table.getValueAt(row, 3);
+        }
+
+        if (isOverdue(dateTime)) {
+            setForeground(COLOR_RED);
+
+        } else {
+            setForeground(COLOR_BLUE);
+        }
+        
+        String status = (String) table.getValueAt(row, 4);
+        
+        if (isDone(status)) {
+            setForeground(COLOR_LIGHT_BLUE);
+        }
+        
+        int modelRow = table.convertRowIndexToModel(row);
+        if (table.isRowSelected(modelRow)) {
+           setBackground(COLOR_LIGHT_PINK);
+        }
+ 
+        TableColumnModel columnModel = table.getColumnModel(); 
+        setSize(columnModel.getColumn(column).getWidth(), 0); 
+        int height_wanted = (int) getPreferredSize().getHeight(); 
+        addSize(table, row, column, height_wanted); 
+        height_wanted = findTotalMaximumRowSize(table, row); 
+        if (height_wanted != table.getRowHeight(row)) { 
+            table.setRowHeight(row, height_wanted); 
+        } 
+        return this; 
+    } 
+ 
+    /** 
+     * @param table  - JTable object 
+     * @param row    - The row index of the cell being drawn. 
+     * @param column - The column index of the cell being drawn. 
+     * @param height - Row cell height as int value 
+     *                 This method will add size to cell based on row and column number 
+     */ 
+    private void addSize(JTable table, int row, int column, int height) { 
+        Map<Object, Map<Object, Integer>> rowsMap = tablecellSizes.get(table); 
+        if (rowsMap == null) { 
+            tablecellSizes.put(table, rowsMap = new HashMap<Object, Map<Object, Integer>>()); 
+        } 
+        Map<Object, Integer> rowheightsMap = rowsMap.get(row); 
+        if (rowheightsMap == null) { 
+            rowsMap.put(row, rowheightsMap = new HashMap<Object, Integer>()); 
+        } 
+        rowheightsMap.put(column, height); 
+    } 
+ 
+    /** 
+     * Look through all columns and get the renderer.  If it is 
+     * also a TextAreaRenderer, we look at the maximum height in 
+     * its hash table for this row. 
+     * 
+     * @param table - JTable object 
+     * @param row   - The row index of the cell being drawn. 
+     * @return row maximum height as integer value 
+     */ 
+    private int findTotalMaximumRowSize(JTable table, int row) { 
+        int maximum_height = 0; 
+        Enumeration<TableColumn> columns = table.getColumnModel().getColumns(); 
+        while (columns.hasMoreElements()) { 
+            TableColumn tc = columns.nextElement(); 
+            TableCellRenderer cellRenderer = tc.getCellRenderer(); 
+            if (cellRenderer instanceof DeadlinesAndTimeTasksTableRenderer) { 
+                DeadlinesAndTimeTasksTableRenderer tar = (DeadlinesAndTimeTasksTableRenderer) cellRenderer; 
+                maximum_height = Math.max(maximum_height, 
+                        tar.findMaximumRowSize(table, row)); 
+            } 
+        } 
+        return maximum_height; 
+    } 
+ 
+    /** 
+     * This will find the maximum row size 
+     * 
+     * @param table - JTable object 
+     * @param row   - The row index of the cell being drawn. 
+     * @return row maximum height as integer value 
+     */ 
+    private int findMaximumRowSize(JTable table, int row) { 
+        Map<Object, Map<Object, Integer>> rows = tablecellSizes.get(table); 
+        if (rows == null) return 0; 
+        Map<Object, Integer> rowheights = rows.get(row); 
+        if (rowheights == null) return 0; 
+        int maximum_height = 0; 
+        for (Map.Entry<Object, Integer> entry : rowheights.entrySet()) { 
+            int cellHeight = entry.getValue(); 
+            maximum_height = Math.max(maximum_height, cellHeight); 
+        } 
+        return maximum_height; 
+    } 
+    
+    private boolean isDeadline(String dateTime) {
+    	return dateTime.equals("- -");
+    }
+    
+    private boolean isDone(String status) {
+    	return status.equals("done");
+    }
+    
+    private boolean isOverdue(String dateTime) {
+    	 TimeAnalyser ta = new TimeAnalyser();
+    	 return ta.getDateTimeInMilliseconds(dateTime) < System.currentTimeMillis();
+    }
+}
+	// End of segment: E:\main\src\ui\DeadlinesAndTimeTasksTableRenderer.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\FeedbackFrame.java
+	 */
+
+
+package ui;
+
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+
+public class FeedbackFrame extends JPanel{
+	
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = -2842115507042961347L;
+	
+	private static FeedbackFrame feedbackFrame;
+	private static JTextArea feedbackBox;
+	
+    private static final String WELCOME_MESSAGE = new String( "Welcome to TaskManager!\n");
+
+	private FeedbackFrame() {
+		super();
+		feedbackBox = new JTextArea();
+		add(feedbackBox);
+		initializeFeedbackBox();
+	}
+	
+	private void initializeFeedbackBox() {
+		feedbackBox.setPreferredSize(new Dimension(700, 4));
+		feedbackBox.setRows(4);
+		feedbackBox.setColumns(20);
+		feedbackBox.setFont(new Font("Arial", Font.PLAIN, 12));
+		feedbackBox.setLineWrap(true);
+		feedbackBox.setEditable(false);
+		feedbackBox.setText(WELCOME_MESSAGE);
+	}
+	
+	public void displayText(String text) {
+		feedbackBox.setText(text);
+	}
+
+	public static FeedbackFrame getInstance() {
+		if (feedbackFrame == null) {
+			feedbackFrame = new FeedbackFrame();
+		}
+		return feedbackFrame;
+	}
+	
+	void ensureProperDisplayOfFeedback() {
+		feedbackBox.setCaretPosition(feedbackBox.getDocument().getLength());
+    }
+}
+
+	// End of segment: E:\main\src\ui\FeedbackFrame.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\FloatingTasksTable.java
+	 */
+
+
+package ui;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+
+import javax.swing.AbstractAction;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+
+import logic.LogicController;
+import application.Task;
+
+/**
+ * FloatingTasksTable is used to create a table that stores floating tasks.
+ * 
+	// End of segment: E:\main\src\ui\FloatingTasksTable.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\FloatingTasksTable.java
+	 */
+
+ *
+ */
+public class FloatingTasksTable extends JPanel {
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 1640202558535486039L;
+	
+	private static final String NAME_LABEL = "Floating Tasks";
+	private static final int ROWS = 11;
+	private static final int COLUMN_SIZE = 3;
+	
+	private static final String[] NAMES_COLUMN = {"No.", "Description", "Status"};
+	
+	private static final Font FONT_ARIAL = new Font("Arial", Font.PLAIN, 12);
+
+	private static JLabel label;
+	private static JTable table;
+	private static DefaultTableModel model = new DefaultTableModel(NAMES_COLUMN, 0)
+	{
+		/**
+		 * generated
+		 */
+		private static final long serialVersionUID = 1729950971541446403L;
+
+		//This causes all cells to be not editable
+		public boolean isCellEditable(int row, int column)
+		{
+			return false;
+		}
+	};
+	private static JScrollPane scrollPane;
+	
+	private static FloatingTasksTable floatingTasksTable;
+	private static LogicController logicController;
+	
+	public FloatingTasksTable() {
+		super(new BorderLayout());
+	
+		logicController = LogicController.getInstance();
+
+		initializeTableLabel();
+		add(label, BorderLayout.NORTH);
+		table = new JTable(model);
+		scrollPane = new JScrollPane(table);
+		add(scrollPane, BorderLayout.CENTER);
+		initializeTable();
+		setUpColumnWidth();
+	}
+	
+	private void initializeTableLabel() {
+		label = new JLabel(NAME_LABEL, SwingConstants.CENTER);
+        label.setFont(FONT_ARIAL);
+	}
+	
+	private void initializeTable() {
+		table.setShowGrid(false);
+		setFontAndColor();
+		setSelectionOption();
+		setSize();
+		addKeyboardCommand();
+		setUpColumnWidth();
+	}
+	
+	private void setSize() {
+		table.setPreferredScrollableViewportSize(new Dimension(680, 160));
+		table.setFillsViewportHeight(true);
+
+	}
+
+	private void setFontAndColor() {
+		table.setFont(new Font("Arial", Font.PLAIN, 12));
+		table.getTableHeader().setFont(new Font("Arial", Font.PLAIN, 13));
+		table.setForeground(Color.BLUE);
+	}
+
+	private void setSelectionOption() {
+		table.setRowSelectionAllowed(true);
+		table.setColumnSelectionAllowed(false);
+		table.setCellSelectionEnabled(false);
+	}
+
+	private void addKeyboardCommand() {
+		addScrollUpCommand();
+		addScrollDownCommand();
+	}
+	
+	private void addScrollUpCommand() {
+		table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, 0), "scroll down");
+		table.getActionMap().put("scroll down", new AbstractAction() {        
+			/**
+			 * generated
+			 */
+			private static final long serialVersionUID = -5456434991999269675L;
+
+			public void actionPerformed(ActionEvent ae) {
+				int height = table.getRowHeight() * (ROWS - 1);
+				JScrollBar bar = scrollPane.getVerticalScrollBar();
+				bar.setValue(bar.getValue() + height);
+			}
+		});
+	}
+	
+	private void addScrollDownCommand() {
+		table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, 0), "scroll up");
+		table.getActionMap().put("scroll up", new AbstractAction() {     
+			/**
+			 * generated
+			 */
+			private static final long serialVersionUID = -6151241733122082378L;
+
+			public void actionPerformed(ActionEvent ae) {
+				int height = table.getRowHeight() * (ROWS - 1);
+				JScrollBar bar = scrollPane.getVerticalScrollBar();
+				bar.setValue(bar.getValue() - height);
+			}
+		});
+	}
+	
+	public void updateTable(int taskNumber) {
+		model.setRowCount(0);
+
+		ArrayList<Task> floatingTasks = getFloatingTasks(logicController.getTaskList());
+
+		Object[][] data = new Object[floatingTasks.size()][COLUMN_SIZE];
+
+		for (int i = 0; i < floatingTasks.size(); i++) {
+		    data[i][0] = taskNumber;
+		    taskNumber += 1;
+		    data[i][1] = floatingTasks.get(i).getDescription();
+		    data[i][2] = floatingTasks.get(i).getStatus();
+		    model.addRow(data[i]);
+		}
+	}
+	
+	public ArrayList<Task> getFloatingTasks(ArrayList<Task> taskList) {
+	    ArrayList<Task> floatingTasks = new ArrayList<Task> ();
+	    
+	    for (int i = 0; i < taskList.size(); i++) {
+	        Task currentTask = taskList.get(i);
+	        String taskType = currentTask.getTaskType();
+	        
+	        if (taskType.equals("floating task")) {
+	            floatingTasks.add(currentTask);
+	        }
+	    }
+	    
+	    return floatingTasks;
+	}
+	
+	private Runnable setAllColumns(final int colNo) {
+        Runnable runColWidthSetup = new Runnable(){
+            @Override
+            public void run(){
+                for (int i = 0; i < colNo; i++) {
+                    TableColumn column = table.getColumnModel().getColumn(i);
+                    
+                    boolean isID = i == 0;
+                    boolean isDesc = i == 1;
+                    boolean isStatus = i == 2;
+
+                    if (isID) {
+                        column.setCellRenderer(new FloatingTasksTableRenderer());
+                        column.setPreferredWidth(40);
+                    } else if (isDesc) {
+                        column.setCellRenderer(new FloatingTasksTableRenderer());
+                        column.setPreferredWidth(640);
+                    } else if (isStatus) {
+                        column.setCellRenderer(new FloatingTasksTableRenderer());
+                        column.setPreferredWidth(50);
+                    }
+                }
+
+
+            }
+        };
+        return runColWidthSetup;
+	}
+
+	private void setUpColumnWidth() {
+		final int colNo = table.getColumnCount();
+
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+		Runnable runColWidthSetup = setAllColumns(colNo);
+		SwingUtilities.invokeLater(runColWidthSetup);
+	}
+	
+	public static FloatingTasksTable getInstance() {
+		if (floatingTasksTable == null) {
+			floatingTasksTable = new FloatingTasksTable();
+		}
+		
+		return floatingTasksTable;
+	}
+}
+
+
+
+	// End of segment: E:\main\src\ui\FloatingTasksTable.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\FloatingTasksTableRenderer.java
+	 */
+
+
+package ui;
+
+import javax.swing.JTable; 
+import javax.swing.JTextArea; 
+import javax.swing.table.DefaultTableCellRenderer; 
+import javax.swing.table.TableCellRenderer; 
+import javax.swing.table.TableColumn; 
+import javax.swing.table.TableColumnModel; 
+
+import java.awt.Color;
+import java.awt.Component; 
+import java.awt.Font;
+import java.util.Enumeration; 
+import java.util.HashMap; 
+import java.util.Map; 
+
+/**
+ * This class is used to render individual cells in a JTable. 
+ * 
+	// End of segment: E:\main\src\ui\FloatingTasksTableRenderer.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\FloatingTasksTableRenderer.java
+	 */
+
+ *
+ */
+ 
+public class FloatingTasksTableRenderer extends JTextArea implements TableCellRenderer { 
+	
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = -5225853419067149152L;
+    
+    private static final Color COLOR_LIGHT_BLUE = new Color(170, 204, 255);
+    private static final Color COLOR_LIGHT_PINK = new Color(255, 204, 255);
+    private static final Color COLOR_WHITE = Color.WHITE;
+    private static final Color COLOR_BLUE = Color.BLUE;
+    private static final Font FONT_ARIAL = new Font("Arial", Font.BOLD, 12 );
+    
+	private static final DefaultTableCellRenderer renderer = new DefaultTableCellRenderer(); 
+    
+    // Column heights are placed in this Map 
+    private final Map<JTable, Map<Object, Map<Object, Integer>>> tablecellSizes = new HashMap<JTable, Map<Object, Map<Object, Integer>>>(); 
+ 
+    /** 
+     * Creates a text area renderer. 
+     */ 
+    public FloatingTasksTableRenderer() { 
+        setLineWrap(true); 
+        setWrapStyleWord(true); 
+    } 
+ 
+    /** 
+     * Returns the component used for drawing the cell.  This method is 
+     * used to configure the renderer appropriately before drawing. 
+     * 
+     * @param table      - JTable object 
+     * @param value      - the value of the cell to be rendered. 
+     * @param isSelected - isSelected true if the cell is to be rendered with the selection highlighted; 
+     *                     otherwise false. 
+     * @param hasFocus   - if true, render cell appropriately. 
+     * @param row        - The row index of the cell being drawn. 
+     * @param column     - The column index of the cell being drawn. 
+     * @return - Returns the component used for drawing the cell. 
+     */ 
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
+                                                   boolean hasFocus, int row, int column) { 
+        // set the Font, Color, etc. 
+        renderer.getTableCellRendererComponent(table, value, 
+                isSelected, hasFocus, row, column); 
+       
+        setBackground(renderer.getBackground()); 
+        setBorder(renderer.getBorder()); 
+        setFont(FONT_ARIAL);
+        setText(renderer.getText()); 
+        
+        String status = (String) table.getValueAt(row, 2);
+        
+        if (status.equals("undone")) {
+            setBackground(COLOR_WHITE);
+            setForeground(COLOR_BLUE); 
+        } else if (status.equals("done")) {
+           setForeground(COLOR_LIGHT_BLUE); 
+        }
+        
+        int modelRow = table.convertRowIndexToModel(row);
+        if (table.isRowSelected(modelRow)) {
+           setBackground(COLOR_LIGHT_PINK);
+           setForeground(COLOR_BLUE);
+        }
+        
+        TableColumnModel columnModel = table.getColumnModel(); 
+        setSize(columnModel.getColumn(column).getWidth(), 0); 
+        int height_wanted = (int) getPreferredSize().getHeight(); 
+        addSize(table, row, column, height_wanted); 
+        height_wanted = findTotalMaximumRowSize(table, row); 
+        if (height_wanted != table.getRowHeight(row)) { 
+            table.setRowHeight(row, height_wanted); 
+        } 
+        return this; 
+    } 
+ 
+    /** 
+     * @param table  - JTable object 
+     * @param row    - The row index of the cell being drawn. 
+     * @param column - The column index of the cell being drawn. 
+     * @param height - Row cell height as int value 
+     *                 This method will add size to cell based on row and column number 
+     */ 
+    private void addSize(JTable table, int row, int column, int height) { 
+        Map<Object, Map<Object, Integer>> rowsMap = tablecellSizes.get(table); 
+        if (rowsMap == null) { 
+            tablecellSizes.put(table, rowsMap = new HashMap<Object, Map<Object, Integer>>()); 
+        } 
+        Map<Object, Integer> rowheightsMap = rowsMap.get(row); 
+        if (rowheightsMap == null) { 
+            rowsMap.put(row, rowheightsMap = new HashMap<Object, Integer>()); 
+        } 
+        rowheightsMap.put(column, height); 
+    } 
+ 
+    /** 
+     * Look through all columns and get the renderer.  If it is 
+     * also a TextAreaRenderer, we look at the maximum height in 
+     * its hash table for this row. 
+     * 
+     * @param table - JTable object 
+     * @param row   - The row index of the cell being drawn. 
+     * @return row maximum height as integer value 
+     */ 
+    private int findTotalMaximumRowSize(JTable table, int row) { 
+        int maximum_height = 0; 
+        Enumeration<TableColumn> columns = table.getColumnModel().getColumns(); 
+        while (columns.hasMoreElements()) { 
+            TableColumn tc = columns.nextElement(); 
+            TableCellRenderer cellRenderer = tc.getCellRenderer(); 
+            if (cellRenderer instanceof FloatingTasksTableRenderer) { 
+                FloatingTasksTableRenderer tar = (FloatingTasksTableRenderer) cellRenderer; 
+                maximum_height = Math.max(maximum_height, 
+                        tar.findMaximumRowSize(table, row)); 
+            } 
+        } 
+        return maximum_height; 
+    } 
+ 
+    /** 
+     * This will find the maximum row size 
+     * 
+     * @param table - JTable object 
+     * @param row   - The row index of the cell being drawn. 
+     * @return row maximum height as integer value 
+     */ 
+    private int findMaximumRowSize(JTable table, int row) { 
+        Map<Object, Map<Object, Integer>> rows = tablecellSizes.get(table); 
+        if (rows == null) return 0; 
+        Map<Object, Integer> rowheights = rows.get(row); 
+        if (rowheights == null) return 0; 
+        int maximum_height = 0; 
+        for (Map.Entry<Object, Integer> entry : rowheights.entrySet()) { 
+            int cellHeight = entry.getValue(); 
+            maximum_height = Math.max(maximum_height, cellHeight); 
+        } 
+        return maximum_height; 
+    } 
+}
+	// End of segment: E:\main\src\ui\FloatingTasksTableRenderer.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\InputBox.java
+	 */
+
+
+package ui;
+
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+
+import logic.LogicController;
+
+public class InputBox extends JTextField implements ActionListener{
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 5019197807784262340L;
+	
+	private static final Font FONT_ARIAL = new Font("Arial", Font.PLAIN, 12);
+	private static final String TITLE_HELP_POP_UP = "Help Message";
+	private static final String COMMAND_HELP = "help";
+
+	private static FeedbackFrame feedbackFrame;
+	private static InputBox inputBox;
+	private static DeadlinesAndTimeTasksTable deadlinesAndTimeTasksTable;
+	private static FloatingTasksTable floatingTasksTable;
+	
+	private static LogicController logicController;
+	
+
+	private InputBox() {
+		super();
+		feedbackFrame = FeedbackFrame.getInstance();
+		feedbackFrame = FeedbackFrame.getInstance();
+		deadlinesAndTimeTasksTable = DeadlinesAndTimeTasksTable.getInstance();
+		floatingTasksTable = FloatingTasksTable.getInstance();
+		logicController = LogicController.getInstance();
+
+		initializeInputFrame();
+	}
+
+	private void initializeInputFrame() {
+		setFont(FONT_ARIAL);
+		addActionListener(this);
+	}
+
+	public void actionPerformed(ActionEvent evt) {
+		String input = getUserInput();
+		highlightUserInput();
+		String feedback = processUserInput(input);
+
+		if (isHelpCommand(input)) {
+			popUpHelpWindow(feedback);
+		} else {
+			if (isExitCommand(feedback)) {
+				System.exit(0);
+			} else {
+				displayFeedback(feedback);
+			}
+		}
+
+		ensureProperDisplayOfFeedback();    
+		updateTable();
+	}
+
+	/*
+	 * Make sure new text is visible, even if there was a selection in the feedbackBox
+	 */
+	private void ensureProperDisplayOfFeedback() {
+		feedbackFrame.ensureProperDisplayOfFeedback();
+    }
+    
+    private void popUpHelpWindow(String message) {
+    	PopUp popUp = new PopUp(message);
+    	JOptionPane.showMessageDialog(null, popUp, TITLE_HELP_POP_UP, JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private boolean isHelpCommand(String input) {
+    	return input.toLowerCase().equals(COMMAND_HELP);
+    }
+    
+    private void displayFeedback(String feedback) {
+    	feedbackFrame.displayText(feedback);
+    }
+    
+    private String getUserInput() {
+    	return getText();
+    }
+    
+    private void highlightUserInput() {
+    	selectAll();
+    }
+    
+    private void updateTable() {
+    	int taskNumber = deadlinesAndTimeTasksTable.updateTable();
+    	floatingTasksTable.updateTable(taskNumber);
+    }
+    
+    public static InputBox getInstance() {
+    	if (inputBox == null) {
+			inputBox = new InputBox();
+		}
+    	
+    	return inputBox;
+    }
+    
+    private boolean isExitCommand(String feedback) {
+    	return feedback == null;
+    }
+    
+    /**
+	 * Scan user input and execute the command.
+	 */
+    public String processUserInput(String userInput){
+	    String message;
+	    message = logicController.executeCommand(userInput);
+	    return message;
+	}
+}
+
+	// End of segment: E:\main\src\ui\InputBox.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\PopUp.java
+	 */
+
+
+package ui;
+
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.JTextArea;
+
+/**
+ * PopUp is used to create a pop up window.
+ * In TaskManager, it is used to create a pop-up window for help message
+ * 
+	// End of segment: E:\main\src\ui\PopUp.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\PopUp.java
+	 */
+
+ *
+ */
+
+public class PopUp extends JTextArea {
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 3251601284689941756L;
+	
+	public PopUp(String message) {
+		super(message);
+		initializePopUp();
+
+	}
+	
+	private void initializePopUp() {
+		setPreferredSize(new Dimension(450, 400));
+		setEditable(false);
+    	setLineWrap(true); 
+        setWrapStyleWord(true); 
+    	setFont(new Font("Arial", Font.PLAIN, 12 ));
+    	setSize(450, 1);
+	}
+}
+
+	// End of segment: E:\main\src\ui\PopUp.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\TaskListUI.java
+	 */
+
+
+package ui;
+
+import java.util.ArrayList;
+
+import logic.LogicController;
+import application.Task;
+import application.TaskPrinter;
+
+/**
+ * TaskListUI is used to create a formatted table that displays all the tasks stored in TaskManager in Command Line Interface.
+ * 
+	// End of segment: E:\main\src\ui\TaskListUI.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\TaskListUI.java
+	 */
+
+ *
+ */
+public class TaskListUI {
+	
+	public TaskListUI() {}
+	
+	public void showTask() {
+        LogicController lc = LogicController.getInstance();
+        ArrayList<Task> taskList = lc.getTaskList();
+		TaskPrinter tp = new TaskPrinter();
+		
+		ArrayList<ArrayList<String>> taskListMatrix1 = new ArrayList<ArrayList<String>>();
+		ArrayList<ArrayList<String>> taskListMatrix2 = new ArrayList<ArrayList<String>>();
+
+		ArrayList<String> dataFields1 = new ArrayList<String>();
+		ArrayList<String> dataFields2 = new ArrayList<String>();
+
+		dataFields1.add("No.");
+		dataFields1.add("Description");
+		dataFields1.add("Time");
+		dataFields1.add("Status");
+		
+		dataFields2.add("No.");
+		dataFields2.add("Description");
+		dataFields2.add("Status");
+		
+		taskListMatrix1.add(dataFields1);
+		taskListMatrix2.add(dataFields2);
+
+		int taskNumber = 1;
+
+		for (Task task : taskList) {
+			if (task.getTaskType().equals("floating task")) {
+				ArrayList<String> taskInformation = new ArrayList<String>();
+				taskInformation.add((Integer.toString(taskNumber++)));
+				taskInformation.add(task.getDescription());
+				taskInformation.add(task.getStatus());
+				taskListMatrix2.add(taskInformation);
+			} else {
+				ArrayList<String> taskInformation = new ArrayList<String>();
+				taskInformation.add((Integer.toString(taskNumber++)));
+				taskInformation.add(task.getDescription());
+				taskInformation.add(task.getDateTime());
+				taskInformation.add(task.getStatus());
+				taskListMatrix1.add(taskInformation);
+			}
+		}
+
+		if (taskListMatrix1.size() > 1) {
+			System.out.println("****************************");
+			System.out.println("* Time Tasks and Deadlines *");
+			System.out.println("****************************");
+			tp.printTasksWithTime(taskListMatrix1);
+			System.out.println();
+
+		}
+		
+		if (taskListMatrix2.size() > 1) {
+			System.out.println("*****************");
+			System.out.println("* Floating Task *");
+			System.out.println("*****************");
+			tp.printFloatingTask(taskListMatrix2);
+	        System.out.println();
+
+		}
+		
+	}
+	
+	
+	
+}
+
+	// End of segment: E:\main\src\ui\TaskListUI.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\TaskManagerGUI.java
+	 */
+
+
+package ui;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
+
+/**
+ * TaskManagerGUI is used to create a GUI for TaskManager.
+ * 
+	// End of segment: E:\main\src\ui\TaskManagerGUI.java
+
+
+
+
+
+	/**
+	 * origin: E:\main\src\ui\TaskManagerGUI.java
+	 */
+
+ *
+ */
+
+public class TaskManagerGUI extends JPanel{
+	
+	/**
+	 * generated
+	 */
+	private static final long serialVersionUID = 9047466908965386773L;
+	
+	private static final String TITLE_FRAME = "Task's Manager";
+    private static final String TITLE_SLOGAN = "Managing Tasks Like A Boss";
+    private static final Font FONT_KOKONOR = new Font("Kokonor", Font.ITALIC, 12);
+      
+    private InputBox inputBox;
+    private FeedbackFrame feedbackFrame;
+    private DeadlinesAndTimeTasksTable deadlinesAndTimeTasksTable;
+    private FloatingTasksTable floatingTasksTable;
+    private JLabel slogan;
+
+    private JFrame frame;
+    
+    public TaskManagerGUI() {
+        super(new GridBagLayout());
+
+        inputBox = InputBox.getInstance();
+        feedbackFrame = FeedbackFrame.getInstance();
+        deadlinesAndTimeTasksTable = DeadlinesAndTimeTasksTable.getInstance();
+        floatingTasksTable = FloatingTasksTable.getInstance();
+        
+        addKeyboardCommand();
+        
+        GridBagConstraints c = new GridBagConstraints();
+       
+        //add and position inputBox
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 0;
+        add(inputBox, c);
+        
+        //add and position feedbackFrame
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 1;
+        add(feedbackFrame, c);
+
+        //add and position deadlinesAndTimeTasksTable
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 2;
+        add(deadlinesAndTimeTasksTable, c);
+ 
+        //add and position floatingTasksTable
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 10;
+        add(floatingTasksTable, c);      
+     
+        updateTable();
+    }
+    
+    public void updateTable() {
+    	int taskNumber = deadlinesAndTimeTasksTable.updateTable();
+    	floatingTasksTable.updateTable(taskNumber - 1);
+    }
+
+    /**
+     * Create the GUI and show it. For thread safety,
+     * this method should be invoked from the
+     * event-dispatching thread.
+     */
+    private void createAndShowGUI() {
+    	frame = new JFrame(TITLE_FRAME);
+    	initializeFrame();
+    	initializeSlogan();
+
+    	Clock clock = new Clock();
+    	TaskManagerGUI gui = new TaskManagerGUI();
+    	
+    	frame.add(clock, BorderLayout.NORTH);
+    	frame.add(gui, BorderLayout.CENTER);
+    	frame.add(slogan, BorderLayout.SOUTH);
+
+    	displayFrame();
+    }
+
+    private void initializeFrame() {
+    	frame.setResizable(false);
+    	frame.setMinimumSize(new Dimension(700, 500));
+    	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    	frame.setLayout(new BorderLayout());
+    }
+
+    private void displayFrame() {
+    	frame.setLocation(200, 200);
+    	frame.pack();
+    	frame.setVisible(true);
+    }
+
+    private void initializeSlogan() {
+    	slogan = new JLabel(TITLE_SLOGAN, SwingConstants.CENTER);
+    	slogan.setFont(FONT_KOKONOR);
+    }
+
+    public void run() {
+    	createAndShowGUI();
+    }
+
+    public void printMessageToUser(String message){
+    	System.out.println(message);
+    }
+
+    private void addKeyboardCommand() {
+    	 KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
+
+             public boolean dispatchKeyEvent(KeyEvent e) {
+            	 
+            	 //Allows the use of "escape" key to close the program
+                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                     System.exit(0);
+                 }
+                 
+                 //Allows the use of "alt" key to minimize the program
+                 if (e.getKeyCode() == KeyEvent.VK_ALT) {
+                 	frame.setState(Frame.ICONIFIED);
+                 }
+  
+                 return false;
+             }
+         });
+    }
+    
+}
+
+	// End of segment: E:\main\src\ui\TaskManagerGUI.java
+
+
+
+
+
