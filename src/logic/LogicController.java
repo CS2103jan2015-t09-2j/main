@@ -101,7 +101,8 @@ public class LogicController {
             return executeAddByDefault(userCommand);
         }
         else {
-            return handlerTable.get(inputToken[1]).getHelp();
+            CommandHandler handler = handlerTable.get(inputToken[1]);
+            return handler.getHelp(handler.getAliases().get(0));
         }
     }
 
@@ -118,7 +119,7 @@ public class LogicController {
 
     private String prepareHelp(String help) {
         for (CommandHandler handler: handlers)
-            help += handler.getHelp();
+            help += handler.getHelp(handler.getAliases().get(0));
         return help;
     }
 

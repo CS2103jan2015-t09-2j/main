@@ -15,11 +15,11 @@ import application.Task;
  *
  */
 class RedoHandler extends UndoableCommandHandler {
-
+    
     private ArrayList<String> aliases = new ArrayList<String>(
             Arrays.asList("redo", "r"));
     private static final String REDO_STEPS_MESSAGE = "Repeated last %1$s changes\n";
-            
+    private static final String HELP_MESSAGE = "%1$s\n\t discard the undo actions";        
 
     @Override
     void reset() {
@@ -35,8 +35,8 @@ class RedoHandler extends UndoableCommandHandler {
     protected String execute(String command, String parameter, ArrayList<Task> taskList) {
         int steps = 0;
         String[] token = parameter.split(" ");
-        if (token[0].toLowerCase().equals("help")) {
-            return getHelp();
+        if (isHelp(token)) {
+            return getHelp(command);
         }
         
         if (isRedoOnly(parameter)) {
@@ -72,6 +72,10 @@ class RedoHandler extends UndoableCommandHandler {
             }
         }
     }
+
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().equals("help");
+    }
     
     private boolean isAll(String string) {
         return string.toLowerCase().trim().equals("all");
@@ -87,8 +91,8 @@ class RedoHandler extends UndoableCommandHandler {
     }
     
     @Override
-    public String getHelp() {
-        return "redo\n\t discard the undo actions";
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
     
     @Override

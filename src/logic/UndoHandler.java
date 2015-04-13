@@ -18,7 +18,7 @@ class UndoHandler extends UndoableCommandHandler {
     private ArrayList<String> aliases = new ArrayList<String>(
             Arrays.asList("undo", "u"));
     private static final String UNDO_STEPS_MESSAGE = "Revoked last %1$s changes\n";
-    
+    private static final String HELP_MESSAGE = "%1$s\n\t revoke latest change";
     @Override
     void reset() {
         
@@ -33,7 +33,7 @@ class UndoHandler extends UndoableCommandHandler {
         int steps = 0;
         String[] token = parameter.split(" ");
         if (isHelp(token[0])) {
-            return getHelp();
+            return getHelp(command);
         }
 
         if (isUndoOnly(parameter)) {
@@ -90,8 +90,8 @@ class UndoHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return "undo\n\t revoke latest change";
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
     
     @Override

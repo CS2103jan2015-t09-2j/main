@@ -20,7 +20,7 @@ import application.TaskCreator;
  *
  */
 class AddHandler extends UndoableCommandHandler {
-    private static final String HELP_MESSAGE = "add <task information>\n\t add a new task to TaskManager\n";
+    private static final String HELP_MESSAGE = "%1$s <task information>\n\t add a new task to TaskManager\n";
     private static final String CLASHING_TASK_MESSAGE = "But there are %1$s tasks clashing with it\n";
 //  private static final String FATAL_ERROR_MESSAGE = "Fatal error! Unable to add Task";
     private static final String SUCCESS_ADD_MESSAGE = "Task \"%1$s\" is added\n";
@@ -40,7 +40,7 @@ class AddHandler extends UndoableCommandHandler {
         String feedback = "";
         String[] token = parameter.split(" ");
         if (isHelpOnly(token) || isEmpty(parameter)) {
-            return getHelp();
+            return getHelp(command);
         }
 
         addLogger.entering(getClass().getName(), "Add non empty task");
@@ -105,7 +105,7 @@ class AddHandler extends UndoableCommandHandler {
     }
 
     /**
-     * chech if user is looking for help
+     * check if user is looking for help
      * @param token the string tokens extracted from user input
      * @return true if the string contains the word help only
      */
@@ -122,8 +122,8 @@ class AddHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
     
 }

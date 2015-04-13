@@ -17,9 +17,9 @@ import application.TaskComparator;
  */
 class EditTimeHandler extends UndoableCommandHandler {
     private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
-    private static final String HELP_MESSAGE = "edit time <index> <new time>\n\t update the task time only\n";
+    private static final String HELP_MESSAGE = "%1$s <index> <new time>\n\t update the task time only\n";
     private static String CHANGE_MESSAGE = "Updated the time of %1$s to %2$s\n";
-    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("et", "etime"));
+    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("etime", "et"));
     Task oldTask, newTask = null;
     String feedback = "";
     @Override
@@ -32,7 +32,7 @@ class EditTimeHandler extends UndoableCommandHandler {
         reset();
     	String[] token = parameter.split(" ");
 		if (token[0].toLowerCase().equals("help") || token[0].equals("")) {
-			return getHelp();
+			return getHelp(command);
 		}
 		
         MainParser parser = new MainParser(parameter);
@@ -100,9 +100,8 @@ class EditTimeHandler extends UndoableCommandHandler {
     }
     
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
-
 
 }

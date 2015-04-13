@@ -15,7 +15,7 @@ import parser.MainParser;
  */
 class MarkHandler extends UndoableCommandHandler {
 
-    private static final String HELP_MESSAGE = "mark [index]\n\t mark a task as done\n";
+    private static final String HELP_MESSAGE = "%1$s [index]\n\t mark a task as done\n";
     private static final String INVALID_INDEX_MESSAGE = "Nothing to mark for %1$s\n";
     private static final String MARKED_MESSAGE = "Marked %1$s as done and archieved\n";
     private ArrayList<String> aliases = new ArrayList<String>(
@@ -35,7 +35,7 @@ class MarkHandler extends UndoableCommandHandler {
 
         String[] token = parameter.split(" ");
         if (isHelp(token) || isEmpty(parameter)) {
-            return getHelp();
+            return getHelp(command);
         }
 
         try {
@@ -128,8 +128,8 @@ class MarkHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
     
     void recordChanges(ArrayList<Task> taskList) {

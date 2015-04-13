@@ -17,9 +17,9 @@ import application.TaskComparator;
  */
 class EditDescriptionHandler extends UndoableCommandHandler {
     private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
-    private static final String HELP_MESSAGE = "edit description <index> <new description>\n\t update the task description only\n";
+    private static final String HELP_MESSAGE = "%1$s <index> <new description>\n\t update the task description only\n";
     private static String CHANGE_MESSAGE = "Changed %1$s to %2$s \n";
-    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("ed", "edes"));
+    private ArrayList<String> aliases = new ArrayList<String>(Arrays.asList("edes", "ed"));
     Task oldTask, newTask = null;
     String feedback = "";
     @Override
@@ -33,7 +33,7 @@ class EditDescriptionHandler extends UndoableCommandHandler {
         reset();
         String[] token = parameter.split(" ");
         if (token[0].toLowerCase().equals("help") || token[0].equals("")) {
-            return getHelp();
+            return getHelp(command);
         }
 
         MainParser parser = new MainParser(parameter.replaceFirst(token[0], ""));
@@ -105,9 +105,8 @@ class EditDescriptionHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
-
 
 }

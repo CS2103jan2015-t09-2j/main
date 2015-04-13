@@ -24,7 +24,7 @@ import application.TaskComparator;
 class EditHandler extends UndoableCommandHandler {
 
     private static final String INVALID_INDEX_MESSAGE = "Invalid index! Please check your input\n";
-    private static final String HELP_MESSAGE = "edit <index> <new task>\n\t edit the task by specifying the index\n"
+    private static final String HELP_MESSAGE = "%1$s <index> <new task>\n\t edit the task by specifying the index\n"
             + "edit description <index> <new description>\n\t update the task description only\n"
             + "edit time <index> <time>\n\t update the time of task \n";
     private static String CHANGE_MESSAGE = "Updated %1$s to %2$s\n";
@@ -43,7 +43,7 @@ class EditHandler extends UndoableCommandHandler {
         String feedback = "";
         String[] token = parameter.split(" ");
         if (isHelp(token) || isEmpty(parameter)) {
-            return getHelp();
+            return getHelp(command);
         }
 
         IndexParser ip = new IndexParser(parameter);		
@@ -62,10 +62,10 @@ class EditHandler extends UndoableCommandHandler {
             case "description":
             case "des":
                 EditDescriptionHandler edh = new EditDescriptionHandler();
-                return edh.execute(token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
+                return edh.execute(command+token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
             case "time":
                 EditTimeHandler eth = new EditTimeHandler();
-                return eth.execute(token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
+                return eth.execute(command+token[0], parameter.replaceFirst(token[0], "").trim(), taskList);
             default:
                 try {
                     index = ip.getIndex() - 1;
@@ -158,8 +158,8 @@ class EditHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
 
 
