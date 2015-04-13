@@ -18,7 +18,7 @@ import parser.MainParser;
  */
 class DeleteHandler extends UndoableCommandHandler {
 
-    private static final String HELP_MESSAGE = "delete <index>\n\t remove the respective task of the index from TaskManager\n";
+    private static final String HELP_MESSAGE = "%1$s <index>\n\t remove the respective task of the index from TaskManager\n";
     private static final String GOODFEEDBACK_MESSAGE = "Removed task %1$s\n";
     private static final String BADFEEDBACK_MESSAGE = "Invalid input %1$s\n";	
     private ArrayList<String> aliases = new ArrayList<String>(
@@ -40,7 +40,7 @@ class DeleteHandler extends UndoableCommandHandler {
         reset();
         String[] token = parameter.split(" ");
         if (isHelp(token) || isEmptyParameter(parameter)) {
-            return getHelp();
+            return getHelp(command);
         }
 
         if (isDeleteAll(token)) {
@@ -101,9 +101,8 @@ class DeleteHandler extends UndoableCommandHandler {
      */
     private void deleteByIndex(ArrayList<Task> taskList, String[] token) throws Exception{
         for (String t: token) {
-            IndexParser ip = new IndexParser(t);
             try {
-                index = ip.getIndex() - 1;
+                index = Integer.parseInt(t) - 1;
             } catch (NumberFormatException nfe) {
                 badFeedback = appendFeedback(badFeedback, t);
                 continue;
@@ -184,8 +183,7 @@ class DeleteHandler extends UndoableCommandHandler {
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
-
 }

@@ -30,7 +30,7 @@ abstract class UndoableCommandHandler extends CommandHandler {
     abstract String execute(String command, String parameter, ArrayList<Task> taskList) throws Exception;
 
     @Override
-    abstract public String getHelp();
+    abstract public String getHelp(String command);
 
     /**
      * Record the changes made to memory and generate a UndoRedoRecorder

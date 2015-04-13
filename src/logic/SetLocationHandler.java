@@ -11,7 +11,8 @@ public class SetLocationHandler extends CommandHandler {
 
     private static final String INVALID_PATH_MESSAGE = "Invalid path!\n";
     private static final String NEW_LOCATION_MESSAGE = "The file is now saved to %1$s\n";
-
+    private static final String HELP_MESSAGE = "%1$s <path>\n\t set the directory that tasks will be saved to\n";
+    
     private ArrayList<String> aliases = new ArrayList<String>(
             Arrays.asList("setlocation", "saveto", "st"));
     @Override
@@ -22,6 +23,11 @@ public class SetLocationHandler extends CommandHandler {
     @Override
     protected String execute(String command, String parameter, ArrayList<Task> taskList) {
         DatabaseLocationChanger dlc = new DatabaseLocationChanger();
+        String[] token = parameter.split(" ");
+        if (isHelp(token)) {
+            return getHelp(command);
+        }
+        
         if (dlc.setDatabaseLocation(parameter)) {
             return String.format(NEW_LOCATION_MESSAGE, parameter);
         }
@@ -31,10 +37,14 @@ public class SetLocationHandler extends CommandHandler {
    
     }
 
+    private boolean isHelp(String[] token) {
+        return token[0].toLowerCase().equals("help");
+    }
+
     @Override
-    public String getHelp() {
+    public String getHelp(String command) {
         // TODO Auto-generated method stub
-        return "setlocation <path>\n\t set the directory that tasks will be saved to\n";
+        return String.format(HELP_MESSAGE, command);
     }
     
 }

@@ -34,6 +34,6 @@ abstract class CommandHandler {
      * get help String for each of the commands when user types "[command] help"
      * @return help string of the handler
      */
-    abstract public String getHelp();   
+    abstract public String getHelp(String command);   
     
 }

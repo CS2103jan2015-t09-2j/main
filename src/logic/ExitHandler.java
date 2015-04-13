@@ -27,7 +27,7 @@ public class ExitHandler extends CommandHandler {
     }
 
     @Override
-    public String getHelp() {
+    public String getHelp(String command) {
         return "";
     }
 

@@ -12,7 +12,7 @@ import application.Task;
  */
 
 class ClearHandler extends UndoableCommandHandler {
-    private static final String HELP_MESSAGE = "clear\n\t delete all tasks\n";
+    private static final String HELP_MESSAGE = "%1$s\n\t delete all tasks\n";
     private static final String ALL_CLEAR_MESSAGE = "All tasks cleared\n";
     private ArrayList<String> aliases = new ArrayList<String>(
             Arrays.asList("clear", "clr", "dall", "deleteall"));
@@ -25,6 +25,10 @@ class ClearHandler extends UndoableCommandHandler {
     @Override
     protected String execute(String command, String parameter, ArrayList<Task> taskList) {
         reset();
+        String[] token = parameter.split(" ");
+        if (isHelpOnly(token)) {
+            return getHelp(command);
+        }
         oldTaskList = new ArrayList<Task>(taskList);
         recordChanges(taskList);
         memory.removeAll();
@@ -49,9 +53,18 @@ class ClearHandler extends UndoableCommandHandler {
         taskList.clear();
     }
     
+    /**
+     * check if user is looking for help
+     * @param token the string tokens extracted from user input
+     * @return true if the string contains the word help only
+     */
+    private boolean isHelpOnly(String[] token) {
+        return ((token.length == 1) && (token[0].toLowerCase().trim().equals("help")));
+    }
+    
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
 
     @Override

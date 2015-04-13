@@ -17,7 +17,7 @@ import parser.MainParser;
  */
 class ShowHandler extends CommandHandler{
 
-    private static final String HELP_MESSAGE = "show\n\t show all tasks in TaskManager\nshow [keyword]\n\t show all tasks containing the keyword\n";
+    private static final String HELP_MESSAGE = "%1$s\n\t show all tasks in TaskManager\nshow [keyword]\n\t show all tasks containing the keyword\n";
     private static final String EMPTY_LIST_MESSAGE = "There is no %1$stask\n";
     private static final String FOUND_DATE_MESSAGE = "Showing tasks on %1$s\n";
     private static final String NOT_FOUND_DATE_MESSAGE = "No tasks on %1$s\n";
@@ -38,7 +38,7 @@ class ShowHandler extends CommandHandler{
         
         String[] token = parameter.split(" ");
         if (isHelp(token)) {
-            return getHelp();
+            return getHelp(command);
         }
 
         if (isSearchStatus(parameter)) {
@@ -337,7 +337,7 @@ class ShowHandler extends CommandHandler{
     }
 
     @Override
-    public String getHelp() {
-        return HELP_MESSAGE;
+    public String getHelp(String command) {
+        return String.format(HELP_MESSAGE, command);
     }
 }
