@@ -31,6 +31,9 @@ public class MemorySearchTest {
     }
 
     @Test
+    /**
+     * this is a boundary case where the date specified is exactly same as the dates of some tasks
+     */
     public void testSearchOnDay() {
         try {
             taskSetup();
